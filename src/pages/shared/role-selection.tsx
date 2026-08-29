@@ -20,7 +20,7 @@ export function RoleSelectionPage() {
         </div>
 
         <div className="space-y-4">
-          <Card className="cursor-pointer transition-colors hover:bg-accent/50">
+          <Card className="cursor-pointer transition-colors hover:bg-accent/50 rounded-xl">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">{t('i_am_patient')}</CardTitle>
               <CardDescription>
@@ -29,16 +29,16 @@ export function RoleSelectionPage() {
             </CardHeader>
             <CardContent>
               <Button
-                className="w-full"
+                className="w-full h-11 rounded-lg"
                 size="lg"
-                onClick={() => navigate('/patient')}
+                onClick={() => navigate('/patient/language')}
               >
                 {t('i_am_patient')}
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer transition-colors hover:bg-accent/50">
+          <Card className="cursor-pointer transition-colors hover:bg-accent/50 rounded-xl">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">{t('i_am_caregiver')}</CardTitle>
               <CardDescription>
@@ -47,7 +47,7 @@ export function RoleSelectionPage() {
             </CardHeader>
             <CardContent>
               <Button
-                className="w-full"
+                className="w-full h-11 rounded-lg"
                 variant="outline"
                 size="lg"
                 onClick={() => navigate('/caregiver/login')}

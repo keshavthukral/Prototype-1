@@ -244,6 +244,22 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      create_patient_for_caregiver: {
+        Args: {
+          p_preferred_language?: string
+          p_date_of_birth?: string
+          p_notes?: string
+        }
+        Returns: {
+          id: string
+          user_id: string | null
+          preferred_language: string
+          date_of_birth: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+      }
       get_user_role: {
         Returns: string
       }
@@ -279,7 +295,7 @@ export interface Database {
         Returns: {
           activity_type: string
           activity_data: Json
-          created_at: string
+          occurred_at: string
         }[]
       }
     }

@@ -15,7 +15,9 @@ export const strings: Record<Language, Record<string, string>> = {
     next: 'Next',
     finish: 'Finish',
     close: 'Close',
-    
+    yes: 'Yes',
+    no: 'No',
+
     // Auth
     login: 'Login',
     logout: 'Logout',
@@ -23,14 +25,38 @@ export const strings: Record<Language, Record<string, string>> = {
     password: 'Password',
     login_button: 'Sign In',
     register_button: 'Create Account',
-    
+
+    // Language Selection
+    select_language: 'Choose your language',
+    english: 'English',
+    assamese: '\u0905\u0938\u092E\u0940\u09AF\u09BC\u09BE',
+    continue_button: 'Continue',
+
     // Patient Home
     welcome: 'Welcome',
+    friend: 'Friend',
+    how_are_you_today: 'How are you today?',
     start_activity: "Start Today's Activity",
+    start_today_activity: "Let's Play Today",
     my_memories: 'My Memories',
     my_reminders: 'My Reminders',
     hear_again: 'Hear Again',
-    
+    hear_greeting: 'Hear My Greeting',
+    home: 'Home',
+    memories_subtitle: 'People who matter to you',
+    reminders_subtitle: "Today's reminders",
+
+    // Today's Activity (sequential flow)
+    activity_start: "Let's begin!",
+    activity_memory_title: 'First: Memory Game',
+    activity_pattern_title: 'Next: Pattern Game',
+    activity_memory_done: 'Memory game complete!',
+    activity_pattern_done: 'Pattern game complete!',
+    activity_all_done: 'All done for today!',
+    activity_go_home: 'Back to Home',
+    activity_memory_score: 'You got {score} out of {total}',
+    activity_pattern_score: 'You got {score} out of {total}',
+
     // Games
     memory_game: 'Memory Game',
     pattern_game: 'Pattern Game',
@@ -41,69 +67,205 @@ export const strings: Record<Language, Record<string, string>> = {
     time: 'Time',
     hints_used: 'Hints Used',
     well_done: 'Well Done!',
+    excellent: 'Excellent!',
     try_again: 'Try Again',
-    
+    pick_game: 'Pick a Game',
+    play_again: 'Play Again',
+    back_home: 'Back to Home',
+
     // Memory Game Specific
+    memory_game_instruction: 'Look at each object carefully. Then tell us what you remember!',
+    remember_this: 'Remember this one',
+    what_do_you_remember: 'What do you remember?',
+    tap_objects_remembered: 'Tap the objects you saw',
     remember_objects: 'Remember these objects',
     select_remembered: 'Select the objects you remember',
     objects_shown: 'objects shown',
-    objects_correct: 'correct',
-    
+    objects_correct: 'objects correct',
+    memorize_objects: 'Look at these objects carefully.',
+    get_ready_to_remember: 'Get ready to remember...',
+    memory_hint_text: 'Think about what you saw. Take your time.',
+    use_hint: 'Need a hint?',
+    pattern_hint_text: 'Look for what repeats. The answer follows the pattern.',
+
     // Pattern Game Specific
+    pattern_instruction: 'Look at the pattern. What comes next?',
     what_comes_next: 'What comes next?',
     select_next: 'Select the next item in the pattern',
     pattern_complete: 'Pattern Complete!',
-    
+    patterns_correct: 'patterns correct',
+
     // Reminders
     reminders: 'Reminders',
+    reminders_instruction: "Here are today's reminders. Tap the check when done.",
     no_reminders: 'No reminders yet',
     medicine: 'Medicine',
     hydration: 'Hydration',
-    activity: 'Activity',
+    activity_type: 'Activity',
     taken: 'Taken',
     done: 'Done',
     remind_later: 'Remind Later',
     add_reminder: 'Add Reminder',
-    
+    mark_done: 'Mark as done',
+
     // Memory Book
     memory_book: 'Memory Book',
+    memory_book_instruction: 'People and moments that matter to you.',
     no_memories: 'No memories yet',
     add_memory: 'Add Memory',
     name: 'Name',
     relationship: 'Relationship',
     description: 'Description',
     photo: 'Photo',
-    
+    memory_of: 'Memory of {name}',
+    prev_memory: 'Previous',
+    next_memory: 'Next',
+    memory_counter: '{current} of {total}',
+    read_aloud: 'Read aloud',
+
     // Caregiver Dashboard
     dashboard: 'Dashboard',
     patient_details: 'Patient Details',
     recent_activity: 'Recent Activity',
     performance_trends: 'Performance Trends',
     today_activities: "Today's Activities",
-    memory_performance: 'Memory Performance',
-    attention_performance: 'Attention Performance',
-    reminder_completion: 'Reminder Completion',
-    
+    memory_performance: 'Memory Game',
+    attention_performance: 'Pattern Game',
+    reminder_completion: 'Reminders',
+    caregiver_portal: 'Care Portal',
+    overview: 'Overview',
+    sessions_completed: 'Sessions completed',
+    avg_accuracy: 'Avg. accuracy',
+    streak_days: 'Day streak',
+    overdue: 'Overdue',
+    this_week: 'This week',
+    last_7_days: 'Last 7 days',
+    accuracy_trend: 'Accuracy trend',
+    activity_breakdown: 'Activity breakdown',
+    games_played: 'Games played',
+    reminders_completed_label: 'Reminders completed',
+    total_sessions: 'Total sessions',
+    quick_actions: 'Quick actions',
+    no_upcoming: 'No upcoming reminders',
+    view_details: 'View details',
+
+    // Caregiver Login
+    login_subtitle: 'Sign in to manage care',
+    login_email_placeholder: 'you@example.com',
+    login_password_placeholder: 'Enter your password',
+    login_error_invalid: 'Invalid email or password',
+    login_error_server: 'Could not connect to server. Please try again.',
+    login_offline_notice: 'No internet connection. You can still access cached data.',
+    login_continue_offline: 'Continue Offline',
+
+    // Caregiver Dashboard
+    patient_name_label: 'Patient',
+    connection_status: 'Connection',
+    sync_status_label: 'Sync status',
+    pending_sync: 'pending',
+    all_synced: 'All synced',
+    today_summary: 'Today',
+    sessions_today: 'sessions',
+    no_sessions_today: 'No sessions today',
+    performance_history: 'Engagement history',
+    performance_history_desc: 'Performance across recent sessions',
+    memory_accuracy_history: 'Memory game accuracy',
+    pattern_accuracy_history: 'Pattern game accuracy',
+    recent_sessions_label: 'Recent sessions',
+    activity_feed: 'Recent activity',
+    activity_game_completed: 'Game completed',
+    activity_reminder_completed: 'Reminder done',
+    activity_reminder_postponed: 'Reminder postponed',
+    activity_memory_added: 'Memory added',
+    activity_sync_event: 'Data synced',
+    no_activity: 'No recent activity',
+    no_activity_desc: 'Activity will appear here as your patient uses the app.',
+    no_reminders_configured: 'No reminders configured',
+    no_reminders_desc: 'Add reminders to help your patient stay on track.',
+    no_sessions: 'No sessions yet',
+    no_sessions_desc: 'Game sessions will appear here after your patient plays.',
+    no_memories_configured: 'No memories added',
+    no_memories_desc: 'Add photos and names to help your patient recognize loved ones.',
+    score_label: 'Score',
+    accuracy_label: 'Accuracy',
+    difficulty_label: 'Level',
+    minutes_ago: 'm ago',
+    hours_ago: 'h ago',
+    yesterday: 'Yesterday',
+    days_ago: 'd ago',
+    just_now: 'Just now',
+    retry_load: 'Retry',
+    error_loading: 'Something went wrong',
+    error_loading_desc: 'We could not load this data. Check your connection and try again.',
+
+    // Patient Detail
+    patient_overview: 'Patient overview',
+    profile_label: 'Profile',
+    language_label: 'Language',
+    member_since: 'Member since',
+    sessions_played: 'Sessions played',
+    average_accuracy_label: 'Average accuracy',
+    current_level: 'Current level',
+    reminder_status: 'Reminder status',
+    completed_today: 'Completed today',
+    pending_today: 'Pending',
+    memories_count: 'Memories',
+
     // System States
     online: 'Online',
     offline: 'Offline',
-    syncing: 'Syncing...',
-    sync_complete: 'Sync Complete',
+    syncing: 'Syncing…',
+    sync_complete: 'Synced',
+    sync_failed: 'Sync failed',
+    offline_saved_device: 'Saved on this device',
     no_data: 'No data yet',
-    
-    // Language Selection
-    select_language: 'Select Language',
-    english: 'English',
-    assamese: 'Assamese',
-    
+    demo_mode: 'Demo',
+
     // Accessibility
     voice_instruction: 'Voice Instruction',
     replay: 'Replay',
-    
+
     // Role Selection
     select_role: 'Select your role',
     i_am_patient: "I'm a Patient",
     i_am_caregiver: "I'm a Caregiver",
+
+    // Caregiver Form Fields
+    select_patient: 'Select Patient',
+    no_patients_linked: 'No patients linked to your account',
+    reminder_title: 'Reminder Title',
+    reminder_title_placeholder: 'e.g., Take a walk in the garden',
+    reminder_type_label: 'Reminder Type',
+    reminder_time: 'Time',
+    reminder_frequency: 'Frequency',
+    frequency_daily: 'Daily',
+    frequency_weekly: 'Weekly',
+    frequency_as_needed: 'As Needed',
+    description_placeholder: 'A short familiar memory or description...',
+    photo_upload: 'Upload Photo',
+    photo_change: 'Change Photo',
+    photo_remove: 'Remove Photo',
+    patient_label: 'Patient',
+
+    // Validation
+    field_required: 'This field is required',
+    title_required: 'Please enter a reminder title',
+    patient_required: 'Please select a patient',
+    name_required: 'Please enter a name',
+    reminder_saved: 'Reminder saved successfully',
+    memory_saved: 'Memory saved successfully',
+    save_failed: 'Failed to save. Please try again.',
+
+    // Medical Disclaimer
+    medical_disclaimer: 'Please enter the reminder text as-is. The system stores what you type but does not provide medical dosage recommendations.',
+    no_dosage_recommendations: 'This system does not provide medical dosage recommendations.',
+
+    // Offline Handling
+    offline_saved_locally: 'Saved locally. Will sync when you are back online.',
+    offline_image_disabled: 'Photo upload is not available offline. You can add the photo later when you are back online.',
+    queued_for_sync: 'Queued for sync',
+    offline_cached: 'Available offline',
+    viewing_cached: 'Viewing cached data',
   },
   as: {
     // Common
@@ -119,7 +281,9 @@ export const strings: Record<Language, Record<string, string>> = {
     next: '\u09AA\u09B0\u09B5\u09B0\u09CD\u09A4\u09C0',
     finish: '\u09B8\u09AE\u09BE\u09AA\u09CD\u09A4',
     close: '\u09AC\u09A8\u09CD\u09A7 \u0995\u09B0\u0995',
-    
+    yes: '\u09B9\u09AF\u09BC',
+    no: '\u09A8\u09A6\u09BF',
+
     // Auth
     login: '\u09B2\u0997\u09BF\u09A8',
     logout: '\u09B2\u0997\u0986\u0989\u099F',
@@ -127,14 +291,38 @@ export const strings: Record<Language, Record<string, string>> = {
     password: '\u09AA\u09BE\u09B8\u09C1\u09A1',
     login_button: '\u09B8\u09BE\u0987\u09A8 \u0987\u09A8',
     register_button: '\u098F\u0995\u09BE\u0993\u09A3\u09CD\u099F \u09B8\u09C3\u09B7\u09CD\u099F\u09BF \u0995\u09B0\u0995',
-    
+
+    // Language Selection
+    select_language: '\u0986\u09AA\u09C1\u09A8\u09BE\u09B0 \u09AD\u09BE\u09B7\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u0995',
+    english: '\u0987\u0982\u09B0\u09BE\u099C\u09C0',
+    assamese: '\u0985\u09B8\u09AE\u09C0\u09AF\u09BC\u09BE',
+    continue_button: '\u0986\u0997\u09C7 \u09AF\u09BE\u0993\u0995',
+
     // Patient Home
     welcome: '\u09B8\u09CD\u09B5\u09BE\u0997\u09A4\u09AE',
+    friend: '\u09B8\u09C7\u09A8',
+    how_are_you_today: '\u0986\u099C\u09BF \u0995\u09C7\u09A8\u09C7 \u09A4\u09C1\u09B8\u09BE\u0995\u09A4\u09CD\u09A4 \u09A1\u09BE\u0995\u09BE?',
     start_activity: '\u0986\u099C\u09BF\u09B0 \u0995\u09BE\u09B0\u09CD\u09AF \u0986\u09B0\u09AE\u09CD\u09AD \u0995\u09B0\u0995',
+    start_today_activity: '\u0986\u099C\u09BF \u0996\u09C7\u09B2\u0995',
     my_memories: '\u09AE\u09CB\u09B0 \u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE',
     my_reminders: '\u09AE\u09CB\u09B0 \u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF',
     hear_again: '\u0986\u0995\u09CC \u09B6\u09C1\u09A8\u0995',
-    
+    hear_greeting: '\u09AE\u09CB\u09B0 \u09B6\u09C1\u09A8\u0995\u09A4\u09BE \u09B6\u09C1\u09A8\u0995',
+    home: '\u0998\u09B0',
+    memories_subtitle: '\u0986\u09AA\u09CB\u09A8\u09BE\u09B0 \u099C\u09C0\u09F3\u09A8\u09A4 \u09AE\u09BE\u09A8\u09C1\u09B9',
+    reminders_subtitle: '\u0986\u099C\u09BF\u09B0 \u09B8\u09AE\u09C2\u09B9\u09B8\u09AE\u09C2\u09B9',
+
+    // Today's Activity (sequential flow)
+    activity_start: '\u0986\u09B0\u09AE\u09CD\u09AD \u0986\u09B0\u09B8\u09C7!',
+    activity_memory_title: '\u09AA\u09B9\u09BF\u09B2\u09A4\u09C7: \u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE \u0996\u09C7\u09B2',
+    activity_pattern_title: '\u09A4\u09C7\u09B0\u09AA\u09B0: \u09AA\u09C7\u099F\u09BE\u09B0\u09CD\u09A8 \u0996\u09C7\u09B2',
+    activity_memory_done: '\u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE \u0996\u09C7\u09B2 \u09B8\u09AE\u09BE\u09AA\u09CD\u09A4!',
+    activity_pattern_done: '\u09AA\u09C7\u099F\u09BE\u09B0\u09CD\u09A8 \u0996\u09C7\u09B2 \u09B8\u09AE\u09BE\u09AA\u09CD\u09A4!',
+    activity_all_done: '\u0986\u099C\u09BF\u09B0 \u09B8\u09B8\u09CD\u09A4 \u09B8\u09AE\u09BE\u09AA\u09CD\u09A4!',
+    activity_go_home: '\u0998\u09B0\u09B2\u09C8 \u0989\u09AD\u09BE\u0987 \u09AF\u09BE\u0993\u0995',
+    activity_memory_score: '\u0986\u09AA\u09C1\u09A8\u09BF {total}\u09A4\u09B0\u0995\u09A1\u09B9 \u09AE\u09BE\u09A5\u09C7 {score} \u09AA\u09B2\u09A4\u09C7',
+    activity_pattern_score: '\u0986\u09AA\u09C1\u09A8\u09BF {total}\u09A4\u09B0\u0995\u09A1\u09B9 \u09AE\u09BE\u09A5\u09C7 {score} \u09AA\u09B2\u09A4\u09C7',
+
     // Games
     memory_game: '\u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE \u0996\u09C7\u09B2',
     pattern_game: '\u09AA\u09C7\u099F\u09BE\u09B0\u09CD\u09A8 \u0996\u09C7\u09B2',
@@ -145,69 +333,143 @@ export const strings: Record<Language, Record<string, string>> = {
     time: '\u09B8\u09AE\u09AF\u09BC',
     hints_used: '\u09AC\u09CD\u09AF\u09B9\u09C7\u09A4\u09BE \u0995\u09B0\u09BE \u0987\u0999\u09CD\u0997\u09BF\u09A4',
     well_done: '\u09AC\u09B9\u09C1 \u09AD\u09BE\u09B2!',
+    excellent: '\u09B6\u09BE\u09A8\u09A4\u09BE\u09B0!',
     try_again: '\u09AA\u09C1\u09A8\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u0995',
-    
+    pick_game: '\u0995\u09C7\u09B2 \u099B\u09A8\u09BF\u09A4 \u0995\u09B0\u0995',
+    play_again: '\u09A4\u09C7\u09B5\u09C8 \u0996\u09C7\u09B2\u0995',
+    back_home: '\u0998\u09B0\u09B2\u09C8 \u0989\u09AD\u09BE\u0987 \u09AF\u09BE\u0993\u0995',
+
     // Memory Game Specific
-    remember_objects: '\u098F\u0987 \u09AC\u09B8\u09CD\u09A4\u09C1\u09AC\u09CB\u09B0 \u09AE\u09A8\u09A4 \u0995\u09B0\u09BF \u09A5\u09BE\u0995\u0995',
+    memory_game_instruction: '\u09AA\u09CD\u09B0\u09A4\u09BF\u099F\u09CB \u09AC\u09B8\u09CD\u09A4\u09C1 \u09AE\u09A8\u09CB\u09AF\u09CB\u0997\u09C7\u09F0\u09C7 \u099A\u09BE\u0993\u0995\u0964 \u09A4\u09BE\u09B0\u09AA\u09B0 \u0986\u09AA\u09C1\u09A8\u09BF \u0995\u09BF \u09AE\u09A8 \u09AA\u09C1\u09F0\u09BE\u09DF\u09B9 \u0986\u099B\u09C7 \u0995\u0993\u0995\u0964',
+    remember_this: '\u0987\u09AF\u09BC\u09BE\u0995 \u09AE\u09A8 \u0995\u09F0\u0995',
+    what_do_you_remember: '\u0986\u09AA\u09C1\u09A8\u09BF \u0995\u09BF \u09AE\u09A8 \u09AA\u09C1\u09F0\u09BE\u09DF\u09B9 \u0986\u099B\u09C7?',
+    tap_objects_remembered: '\u0986\u09AA\u09C1\u09A8\u09BF \u09A6\u09C7\u0996\u09BE \u09AC\u09B8\u09CD\u09A4\u09C1\u09AC\u09CB\u09F0 \u099F\u09C7\u09AA \u0995\u09F0\u0995',
+    remember_objects: '\u098F \u09AC\u09B8\u09CD\u09A4\u09C1\u09AC\u09CB\u09B0 \u09AE\u09A8\u09A4 \u0995\u09B0\u09BF \u09A5\u09BE\u0995\u0995',
     select_remembered: '\u0986\u09AA\u09C1\u09A8\u09BF \u09AE\u09A8\u09A4 \u0995\u09B0\u09BF \u09A5\u09BE\u0995\u09BE \u09AC\u09B8\u09CD\u09A4\u09C1\u09AC\u09CB\u09B0 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u0995',
     objects_shown: '\u09AC\u09B8\u09CD\u09A4\u09C1 \u09A6\u09C7\u0996\u09C1\u0993\u0993\u09AF\u09BC\u09BE \u09B9\u09C8\u09B8\u09C7',
-    objects_correct: '\u09B6\u09C1\u09A6\u09CD\u09A7',
-    
+    objects_correct: '\u099F\u09CB\u0995\u09BE \u09B8\u09A0\u09BF\u0995',
+
     // Pattern Game Specific
+    pattern_instruction: '\u09AA\u09C7\u099F\u09BE\u09B0\u09CD\u09A8\u099F\u09CB \u099A\u09BE\u0993\u0995\u0964 \u09AA\u09F0\u09F0\u09A4\u09C0\u099F\u09CB \u0995\u09BF \u09B9\u09AC?',
     what_comes_next: '\u09AA\u09B0\u09B5\u09B0\u09CD\u09A4\u09C0 \u0995\u09BF \u0986\u09B9\u09BF\u09AC?',
     select_next: '\u09AA\u09C7\u099F\u09BE\u09B0\u09CD\u09A8\u09B0 \u09AA\u09B0\u09B5\u09B0\u09CD\u09A4\u09C0 \u0986\u0987\u099F\u09C7\u09AE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u0995',
     pattern_complete: '\u09AA\u09C7\u099F\u09BE\u09B0\u09CD\u09A8 \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3!',
-    
+    patterns_correct: '\u09AA\u09C7\u099F\u09BE\u09B0\u09CD\u09A8 \u09B8\u09A0\u09BF\u0995',
+    memorize_objects: '\u098F \u09AC\u09B8\u09CD\u09A4\u09C1\u09AC\u09CB\u09B0 \u09AE\u09A8\u09A4\u099F\u099F\u09CB \u09A8\u099C\u09B0 \u0995\u09B0\u09BF \u099A\u09BE\u0993\u0995\u0964',
+    get_ready_to_remember: '\u09AE\u09A8\u09A4 \u09B0\u0996\u09BF\u09B8\u09A4\u09BE \u09B2\u099C\u09A8\u09CD\u09A4 \u09A4\u09C1\u09B8\u09BE\u0995\u09A4 \u09A1\u09BE\u0995\u09BE...',
+    memory_hint_text: '\u0986\u09AA\u09C1\u09A8\u09BF \u0995\u09C0 \u09A6\u09C7\u0996\u09BF\u09B2\u09C7\u09A8 \u09B8\u09A4\u09B9 \u0995\u09B0\u0995\u0964 \u099A\u09B8\u09CD\u09A4 \u09B0\u09BE\u0996\u09CB\u09A4\u09C7\u0964',
+    use_hint: '\u09B8\u09BE\u09B9\u09BE\u09AF\u09BC\u09A4\u09CD\u09A4\u09BE \u09B2\u09BE\u0997\u09A4\u09B2 \u0995\u09B0\u09A3 \u099E\u09BE\u09A8\u09C7?',
+    pattern_hint_text: '\u099C\u09BF \u09A6\u09C1\u09B9\u09B0\u09BE \u09B9\u09C8 \u09B8\u09C7 \u0996\u09C1\u099C\u09C0\u09B6\u09B8\u09C7\u09A4\u09C7 \u09B9\u09AC\u0993\u09AF\u09BC\u0964',
+
     // Reminders
     reminders: '\u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF',
+    reminders_instruction: '\u0986\u099C\u09BF\u09B0 \u09B8\u09AE\u09C2\u09B9\u09B8\u09AE\u09C2\u09B9 \u0987\u09AF\u09BC\u09BE\u09A4 \u0986\u099B\u09C7\u0964 \u09B8\u09AE\u09BE\u09AA\u09CD\u09A4 \u09B9\u099A\u09B2\u09C7 \u099A\u09C7\u0995\u099F\u09CB \u099F\u09C7\u09AA \u0995\u09F0\u0995\u0964',
     no_reminders: '\u09AF\u09C7\u09A4\u09BF\u09AF\u09BC \u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF \u09A8\u09BE\u0987',
     medicine: '\u0993\u09B7\u09C1\u09A7',
     hydration: '\u09AA\u09BE\u09A8\u09C0',
-    activity: '\u0995\u09BE\u09B0\u09CD\u09AF',
+    activity_type: '\u0995\u09BE\u09B0\u09CD\u09AF',
     taken: '\u09B2\u0993\u09B2',
     done: '\u09B9\u0995\u09B2',
     remind_later: '\u09AA\u09BF\u099B\u09A4 \u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF \u09A6\u09BF\u09AF\u09BC\u0995',
     add_reminder: '\u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF \u09AF\u09C7\u0995 \u0995\u09B0\u0995',
-    
+    mark_done: '\u09B8\u09AE\u09BE\u09AA\u09CD\u09A4 \u099A\u09BF\u09A4\u09CD\u09A4 \u0995\u09B0\u0995',
+
     // Memory Book
     memory_book: '\u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE \u09AC\u09B9\u09C0',
+    memory_book_instruction: '\u0986\u09AA\u09CB\u09A8\u09BE\u09B0 \u099C\u09C0\u09F3\u09A8\u09A4 \u09AE\u09BE\u09A8\u09C1\u09B9 \u0986\u09F0\u09C1 \u09AE\u09C1\u09B9\u09C2\u09F0\u09CD\u09A4\u09AC\u09CB\u09F0\u0964',
     no_memories: '\u09A4\u09B9\u09C7\u09A4\u09BF\u09AF\u09BC \u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE \u09A8\u09BE\u0987',
     add_memory: '\u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE \u09AF\u09C7\u0995 \u0995\u09B0\u0995',
     name: '\u09A8\u09BE\u09AE',
     relationship: '\u09B8\u09AE\u09CD\u09AA\u09B0\u09CD\u0995',
     description: '\u09AC\u09BF\u09B5\u09B0\u09A3',
     photo: '\u09AB\u099B\u099F\u09B0',
-    
+    memory_of: '{name}\u09B0 \u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE',
+    prev_memory: '\u09A4\u09C7\u0995\u09B0\u09F0\u09A4\u09C0',
+    next_memory: '\u09AA\u09B0\u09B5\u09B0\u09CD\u09A4\u09C0',
+    memory_counter: '{total}\u09A4 \u09AE\u09A7\u09CD\u09AF\u09C7 {current}',
+    read_aloud: '\u09B8\u09CD\u09AC\u09B0 \u0995\u09B0\u0995',
+
     // Caregiver Dashboard
     dashboard: '\u09A1\u09C7\u09B6\u09AC\u09B0\u09CD\u09A1',
     patient_details: '\u09B0\u09CB\u0997\u09C0\u09B0 \u09AC\u09BF\u09B5\u09B0\u09A3',
     recent_activity: '\u09B6\u09C7\u09B9\u09A4\u09C0\u09AF\u09BC\u09A6\u09B9 \u0995\u09BE\u09B0\u09CD\u09AF',
     performance_trends: '\u09A6\u0995\u09CD\u09B7\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09AC\u09A3\u09A4\u09BE',
     today_activities: '\u0986\u099C\u09BF\u09B0 \u0995\u09BE\u09B0\u09CD\u09AF',
-    memory_performance: '\u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE\u09B0 \u09A6\u0995\u09CD\u09B7\u09A4\u09BE',
-    attention_performance: '\u09AE\u09A8\u09CB\u09AF\u09CB\u0997 \u09B0 \u09A6\u0995\u09CD\u09B7\u09A4\u09BE',
-    reminder_completion: '\u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3',
-    
+    memory_performance: '\u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE\u09B0 \u0996\u09C7\u09B2',
+    attention_performance: '\u09AA\u09C7\u099F\u09BE\u09B0\u09CD\u09A8 \u0996\u09C7\u09B2',
+    reminder_completion: '\u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF',
+    caregiver_portal: '\u09AF\u09A4\u09CD\u09A8\u0995\u09B0\u09CD\u09A4\u09BE \u09AAৌর্ট\u09B2',
+    overview: '\u09B8\u0982শ্লেষ\u09A3',
+    sessions_completed: '\u09B8ম্পন\u09CDত \u09B8স্ত',
+    avg_accuracy: '\u0997ড়সর শুদ্ধতা',
+    streak_days: '\u09A6িনকর সিল',
+    overdue: '\u09B8ময়ে ব্ধে সরেছে',
+    this_week: 'এতি সাপ্তাহিক',
+    last_7_days: 'শেষ দিন কেলে',
+    accuracy_trend: 'শুদ্ধতা প্রবণতা',
+    activity_breakdown: 'কার্যর বিশ্লেষণ',
+    games_played: 'খেল খেলা হয়ছে',
+    reminders_completed_label: 'সম্পন্ত সম্বনশন',
+    total_sessions: 'মোট সমস্তি',
+    quick_actions: 'দ্রুত কার্য',
+    no_upcoming: 'কোননেহে সম্বনশন নাই',
+    view_details: 'বিবরণ দেখুন',
+
     // System States
     online: '\u0985\u09A8\u09B2\u09BE\u0987\u09A8',
     offline: '\u0985\u09AB\u09B2\u09BE\u0987\u09A8',
-    syncing: '\u099B\u09BF\u0999 \u09B9\u09C8 \u0986\u099B\u09C7...',
-    sync_complete: '\u099B\u09BF\u0999 \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3',
-    no_data: '\u09A4\u09B9\u09C7\u09A4\u09BF\u09AF\u09BC \u09A4\u09A5\u09CD\u09AF \u09A8\u09BE\u0987',
-    
-    // Language Selection
-    select_language: '\u09AD\u09BE\u09B7\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u0995',
-    english: '\u0987\u0982\u09B0\u09BE\u099C\u09C0',
-    assamese: '\u0985\u09B8\u09AE\u09C0\u09AF\u09BC\u09BE',
-    
+    syncing: '\u099B\u09BF\u0999 \u09B9\u09C8 \u0986\u099B\u09C7\u2026',
+    sync_complete: '\u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A4',
+    sync_failed: '\u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A4 \u09A4\u09CD\u09B0\u09C1\u099F\u09BF',
+    offline_saved_device: '\u098F\u09A4\u09BF\u09AF\u09BC\u09C7 \u09B8\u09A8\u09CD\u09A4\u099C\u09B0\u0995\u09C7 \u09B8\u09AE\u09CD\u09B0\u0995\u09CD\u09B7\u09A3',
+    no_data: '\u09A4\u09B9\u09C7\u09A4\u09BF\u09AF\u09BC \u09A4\u09A5\u09CD\u09A4\u09AF \u09A8\u09BE\u0987',
+    demo_mode: '\u09A1\u09C7\u09AE\u09CB',
+
     // Accessibility
     voice_instruction: '\u0995\u09A3\u09CD\u09A0 \u09A8\u09BF\u09B0\u09CD\u09A6\u09C7\u09B6\u09A8\u09BE',
     replay: '\u09AA\u09C1\u09A8\u09B0 \u099A\u09B2\u09BE\u0993\u0995',
-    
+
     // Role Selection
     select_role: '\u0986\u09AA\u09C1\u09A8\u09BE\u09B0 \u09AD\u09C2\u09AE\u09BF\u0995\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u0995',
     i_am_patient: '\u09AE\u09CB\u0987 \u09B0\u09CB\u0997\u09C0',
     i_am_caregiver: '\u09AE\u09CB\u0987 \u09AF\u09A4\u09CD\u09A8\u0995\u09B0\u09CD\u09A4\u09BE',
+
+    // Caregiver Form Fields
+    select_patient: '\u09B0\u09CB\u0997\u09C0 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u0995',
+    no_patients_linked: '\u0986\u09AA\u09CB\u09A8\u09BE\u09B0 \u098F\u0995\u09BE\u0993\u09A3\u09CD\u099F\u09B8\u0982\u0997\u09B0\u09C7 \u0995\u09C7\u09A4\u09A4 \u09B0\u09CB\u0997\u09C0 \u09A8\u09BE\u0987',
+    reminder_title: '\u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF\u09B0 \u09B6\u09C0\u09B0\u09CD\u09B7\u0995',
+    reminder_title_placeholder: '\u09A6\u09C7\u0996\u09C1\u09A4\u09C7: \u09AC\u0997\u09BF\u099A\u09C0\u09A4\u09BE \u09B9\u09C1\u09A6\u09C7 \u09B9\u09BF\u099A\u09C1\u0995',
+    reminder_type_label: '\u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF\u09B0 \u09A7\u09B0\u09A3',
+    reminder_time: '\u09B8\u09AE\u09AF\u09BC',
+    reminder_frequency: '\u09A8\u09BF\u09B0\u09CD\u09A4\u09CD\u09AF\u09A4\u09BE',
+    frequency_daily: '\u09A6\u09C8\u09A8\u09BF\u0995',
+    frequency_weekly: '\u09B8\u09BE\u09AA\u09CD\u09A4\u09BE\u09B9\u09BF\u0995',
+    frequency_as_needed: '\u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8 \u09A7\u09B0\u09AE\u09A4\u09BE\u09B0\u09C7',
+    description_placeholder: '\u098F\u099F\u09BE \u099A\u09C7\u09A4\u09BE \u09B8\u09AE\u09CD\u09AA\u09B0\u09CD\u0995\u09A4\u09BE \u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE \u09A8\u09A4\u09B9\u09BE\u09B8...',
+    photo_upload: '\u09AB\u099B\u099F\u09B0 \u0986\u09AA\u09B2\u09CB\u09A1',
+    photo_change: '\u09AB\u099B\u099F\u09B0 \u09B8\u09B2\u09A8\u09A4\u09CD\u09A4 \u0995\u09B0\u0995',
+    photo_remove: '\u09AB\u099B\u099F\u09B0 \\u09AE\u099A\u0995',
+    patient_label: '\u09B0\u09CB\u0997\u09C0',
+
+    // Validation
+    field_required: '\u098F\u099F\u09A4\u09B0 \u0995\u09CD\u09B7\u09A4\u09CD\u09B0 \u09A4\u09C1\u09B2\u09BE \u09B9\u09AF\u09BC',
+    title_required: '\u09A6\u09AF\u09BC\u09BE \u0995\u09B0\u09BF \u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF\u09B0 \u09B6\u09C0\u09B0\u09CD\u09B7\u0995 \u09B2\u09BF\u0996\u09C1\u09A8',
+    patient_required: '\u09A6\u09AF\u09BC\u09BE \u0995\u09B0\u09BF \u09B0\u09CB\u0997\u09C0 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u0995',
+    name_required: '\u09A6\u09AF\u09BC\u09BE \u0995\u09B0\u09BF \u09A8\u09BE\u09AE \u09B2\u09BF\u0996\u09C1\u09A8',
+    reminder_saved: '\u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF \u09B8\u09AB\u09B2\u09A4\u09BE\u09B0\u09CD\u09B7 \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A4 \u09B9\u09C8\u099B\u09C7',
+    memory_saved: '\u09B8\u09AE\u09CD\u099D\u09CB\u09B5\u09BE \u09B8\u09AB\u09B2\u09A4\u09BE\u09B0\u09CD\u09B7 \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A4 \u09B9\u09C8\u099B\u09C7',
+    save_failed: '\u09B8\u09A4\u0995\u09CD\u09B7\u09A3 \u09A4\u09CD\u09B0\u09C1\u099F\u09BF \u09B9\u09C8\u099B\u09C7\u0964 \u09A8\u09A4\u09C1\u09A8\u09A4\u09B0\u09C7 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u0995\u0964',
+
+    // Medical Disclaimer
+    medical_disclaimer: '\u09A6\u09AF\u09BC\u09BE \u0995\u09B0\u09BF \u09B8\u09CB\u09AE\u09CD\u09B5\u09BE\u09A8\u09BF\u09B0 \u09B2\u09BF\u0996\u09A4\u09C7 \u099A\u09BE\u0993\u0995\u0964 \u09B8\u09C7\u09B2 \u09B8\u0982\u09B0\u0995\u09CD\u09B7\u09A3 \u0995\u09B0\u09C7 \u0995\u09BF\u09A8\u09A4\u09C1 \u09A4\u09B9\u09C7 \u09A6\u09BF\u09AF\u09BC\u09C7, \u0995\u09BF\u09A8\u09A4\u09C1 \u09B6\u09B8\u09CD\u09A4\u09CD\u09B0 \u09A1\u099C\u09C7\u09B6 \u09B8\u09C1\u09AA\u09BE\u09B0\u09BF\u09B6 \u09A6\u09C7\u09A8\u09A4 \u09A8\u09A7\u09BF\u09AF\u09BC\u09C7 \u09A8\u09BE\u0987\u0964',
+    no_dosage_recommendations: '\u098F\u099F\u09B8\u09A4\u09CD\u09B0\u09C7 \u09B6\u09B8\u09CD\u09A4\u09C2 \u09A1\u099C\u09C7\u09B6 \u09B8\u09C1\u09AA\u09BE\u09B0\u09BF\u09B6 \u09A6\u09C7\u09A8 \u09A8\u09A7\u09BF\u09AF\u09BC\u09C7 \u09A8\u09BE\u0987\u0964',
+
+    // Offline Handling
+    offline_saved_locally: '\u09B8\u09CD\u09A5\u09BE\u09A8\u09C0\u09AF\u09BC\u09C7 \u09B8\u0982\u09B0\u0995\u09CD\u09B7\u09A3 \u09B9\u09C8\u099B\u09C7\u0964 \u0986\u09AA\u09B2\u09CB\u09A1 \u09A6\u09C7\u09A8\u09A4\u09B0\u09C7 \u09B8\u09C1\u09AE\u09CD\u09AA\u09B0\u09CD\u09A6\u09C7\u09B6 \u09B9\u09AC\u09C7\u099C\u09C7\u0964',
+    offline_image_disabled: '\u0985\u09AB\u09B2\u09BE\u0987\u09A8\u09A4\u09A4\u09BE\u09B0\u09C7 \u09AB\u099B\u099F\u09B0 \u0986\u09AA\u09B2\u09CB\u09A1 \u0989\u09AA\u09B2\u09AC\u09CD\u09A7 \u09A8\u09BE\u0987\u0964 \u0986\u09AA\u09B2\u09CB\u09A1 \u09A6\u09C7\u09A8\u09A4\u09B0\u09C7 \u09AB\u099B\u099F\u09B0 \u09AF\u09CB\u0997 \u09A6\u09BF\u09AF\u09BC\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u0964',
+    queued_for_sync: '\u09B8\u09C1\u09AE\u09CD\u09AA\u09B0\u09CD\u09A6\u09C7\u09B6\u09B0 \u09A4\u09BE\u09B2\u09BF\u0995\u09BE\u09B0\u09A4\u09C7 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7',
+    offline_cached: '\u0985\u09AB\u09B2\u09BE\u0987\u09A8\u09A4\u09A4\u09BE\u09B0\u09C7 \u0989\u09AA\u09B2\u09AC\u09CD\u09A7',
+    viewing_cached: '\u0995\u09CD\u09B7\u09A4\u09CD\u09B0 \u09A4\u09A5\u09CD\u09AF \u09A6\u09C7\u0996\u09BF \u09B9\u09C8',
   }
 }
 

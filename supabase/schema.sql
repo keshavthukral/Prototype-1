@@ -1,5 +1,8 @@
 -- BrainBuddy Database Schema
 -- Offline-first cognitive engagement for elderly patients
+--
+-- Fixed: Ambiguous column references in storage policies and PL/pgSQL functions
+-- Safe to re-run: Uses DROP IF EXISTS / IF NOT EXISTS / CREATE OR REPLACE
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -7,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- =====================================================
 -- PROFILES TABLE (extends Supabase auth.users)
 -- =====================================================
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE,
   full_name TEXT NOT NULL,
@@ -20,7 +23,7 @@ CREATE TABLE public.profiles (
 -- =====================================================
 -- PATIENTS TABLE
 -- =====================================================
-CREATE TABLE public.patients (
+CREATE TABLE IF NOT EXISTS public.patients (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   preferred_language TEXT DEFAULT 'en' CHECK (preferred_language IN ('en', 'as')),
@@ -33,11 +36,11 @@ CREATE TABLE public.patients (
 -- =====================================================
 -- CAREGIVER-PATIENT LINKS
 -- =====================================================
-CREATE TABLE public.caregiver_patient_links (
+CREATE TABLE IF NOT EXISTS public.caregiver_patient_links (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   caregiver_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE,
-  relationship TEXT, -- e.g., 'son', 'daughter', 'nurse'
+  relationship TEXT,
   is_primary BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(caregiver_id, patient_id)
@@ -46,7 +49,7 @@ CREATE TABLE public.caregiver_patient_links (
 -- =====================================================
 -- REMINDERS TABLE
 -- =====================================================
-CREATE TABLE public.reminders (
+CREATE TABLE IF NOT EXISTS public.reminders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE,
   created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -63,7 +66,7 @@ CREATE TABLE public.reminders (
 -- =====================================================
 -- REMINDER COMPLETIONS TABLE
 -- =====================================================
-CREATE TABLE public.reminder_completions (
+CREATE TABLE IF NOT EXISTS public.reminder_completions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   reminder_id UUID REFERENCES public.reminders(id) ON DELETE CASCADE,
   patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE,
@@ -75,15 +78,15 @@ CREATE TABLE public.reminder_completions (
 -- =====================================================
 -- MEMORIES TABLE
 -- =====================================================
-CREATE TABLE public.memories (
+CREATE TABLE IF NOT EXISTS public.memories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE,
   created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   relationship TEXT,
   description TEXT,
-  image_storage_path TEXT, -- Path in Supabase Storage
-  image_url TEXT, -- Public URL for display
+  image_storage_path TEXT,
+  image_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -91,7 +94,7 @@ CREATE TABLE public.memories (
 -- =====================================================
 -- GAME SESSIONS TABLE
 -- =====================================================
-CREATE TABLE public.game_sessions (
+CREATE TABLE IF NOT EXISTS public.game_sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE,
   game_type TEXT NOT NULL CHECK (game_type IN ('memory', 'pattern')),
@@ -107,16 +110,16 @@ CREATE TABLE public.game_sessions (
 -- =====================================================
 -- INDEXES
 -- =====================================================
-CREATE INDEX idx_profiles_role ON public.profiles(role);
-CREATE INDEX idx_patients_user_id ON public.patients(user_id);
-CREATE INDEX idx_caregiver_patient_links_caregiver ON public.caregiver_patient_links(caregiver_id);
-CREATE INDEX idx_caregiver_patient_links_patient ON public.caregiver_patient_links(patient_id);
-CREATE INDEX idx_reminders_patient ON public.reminders(patient_id);
-CREATE INDEX idx_reminder_completions_reminder ON public.reminder_completions(reminder_id);
-CREATE INDEX idx_reminder_completions_patient ON public.reminder_completions(patient_id);
-CREATE INDEX idx_memories_patient ON public.memories(patient_id);
-CREATE INDEX idx_game_sessions_patient ON public.game_sessions(patient_id);
-CREATE INDEX idx_game_sessions_type ON public.game_sessions(game_type);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+CREATE INDEX IF NOT EXISTS idx_patients_user_id ON public.patients(user_id);
+CREATE INDEX IF NOT EXISTS idx_caregiver_patient_links_caregiver ON public.caregiver_patient_links(caregiver_id);
+CREATE INDEX IF NOT EXISTS idx_caregiver_patient_links_patient ON public.caregiver_patient_links(patient_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_patient ON public.reminders(patient_id);
+CREATE INDEX IF NOT EXISTS idx_reminder_completions_reminder ON public.reminder_completions(reminder_id);
+CREATE INDEX IF NOT EXISTS idx_reminder_completions_patient ON public.reminder_completions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_memories_patient ON public.memories(patient_id);
+CREATE INDEX IF NOT EXISTS idx_game_sessions_patient ON public.game_sessions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_game_sessions_type ON public.game_sessions(game_type);
 
 -- =====================================================
 -- UPDATED_AT TRIGGER FUNCTION
@@ -127,30 +130,32 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
--- Apply triggers
+-- Apply triggers (drop first for re-runnability)
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_patients_updated_at ON public.patients;
 CREATE TRIGGER update_patients_updated_at
   BEFORE UPDATE ON public.patients
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_reminders_updated_at ON public.reminders;
 CREATE TRIGGER update_reminders_updated_at
   BEFORE UPDATE ON public.reminders
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_memories_updated_at ON public.memories;
 CREATE TRIGGER update_memories_updated_at
   BEFORE UPDATE ON public.memories
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
--- ROW LEVEL SECURITY POLICIES
+-- ROW LEVEL SECURITY
 -- =====================================================
-
--- Enable RLS on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.caregiver_patient_links ENABLE ROW LEVEL SECURITY;
@@ -159,53 +164,89 @@ ALTER TABLE public.reminder_completions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.memories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.game_sessions ENABLE ROW LEVEL SECURITY;
 
--- Helper function to get user role
-CREATE OR REPLACE FUNCTION get_user_role()
-RETURNS TEXT AS $$
-  SELECT role FROM public.profiles WHERE id = auth.uid();
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+-- =====================================================
+-- HELPER FUNCTIONS
+-- SECURITY DEFINER + SET search_path = ''
+-- Fully schema-qualified to prevent search_path attacks
+-- =====================================================
+CREATE OR REPLACE FUNCTION public.get_user_role()
+RETURNS TEXT
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT p.role FROM public.profiles p WHERE p.id = auth.uid();
+$$;
 
--- Helper function to check if caregiver is linked to patient
-CREATE OR REPLACE FUNCTION is_caregiver_linked_to_patient(patient_uuid UUID)
-RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION public.is_caregiver_linked_to_patient(patient_uuid UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.caregiver_patient_links
-    WHERE caregiver_id = auth.uid()
-    AND patient_id = patient_uuid
+    SELECT 1 FROM public.caregiver_patient_links cpl
+    WHERE cpl.caregiver_id = auth.uid()
+    AND cpl.patient_id = patient_uuid
   );
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+$$;
 
--- Helper function to check if user owns this patient record
-CREATE OR REPLACE FUNCTION is_patient_owner(patient_uuid UUID)
-RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION public.is_patient_owner(patient_uuid UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.patients
-    WHERE id = patient_uuid
-    AND user_id = auth.uid()
+    SELECT 1 FROM public.patients p
+    WHERE p.id = patient_uuid
+    AND p.user_id = auth.uid()
   );
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_profile_linked_to_caregiver(profile_uuid UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.caregiver_patient_links cpl
+    JOIN public.patients p ON p.id = cpl.patient_id
+    WHERE cpl.caregiver_id = auth.uid()
+    AND p.user_id = profile_uuid
+  );
+$$;
+
+-- Revoke from PUBLIC, grant to authenticated only
+REVOKE EXECUTE ON FUNCTION public.get_user_role() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_caregiver_linked_to_patient(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_patient_owner(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_profile_linked_to_caregiver(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_user_role() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_caregiver_linked_to_patient(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_patient_owner(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_profile_linked_to_caregiver(UUID) TO authenticated;
 
 -- =====================================================
 -- PROFILES POLICIES
 -- =====================================================
--- Users can read their own profile
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
--- Caregivers can view profiles of linked patients
+DROP POLICY IF EXISTS "Caregivers can view linked patient profiles" ON public.profiles;
 CREATE POLICY "Caregivers can view linked patient profiles"
   ON public.profiles FOR SELECT
-  USING (
-    get_user_role() = 'caregiver'
-    AND id IN (
-      SELECT p.user_id FROM public.patients p
-      JOIN public.caregiver_patient_links cpl ON p.id = cpl.patient_id
-      WHERE cpl.caregiver_id = auth.uid()
-    )
-  );
+  USING (public.is_profile_linked_to_caregiver(id));
 
--- Users can update their own profile
+DROP POLICY IF EXISTS "Users can create own profile" ON public.profiles;
+CREATE POLICY "Users can create own profile"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
@@ -213,55 +254,40 @@ CREATE POLICY "Users can update own profile"
 -- =====================================================
 -- PATIENTS POLICIES
 -- =====================================================
--- Patients can view their own record
+DROP POLICY IF EXISTS "Patients can view own record" ON public.patients;
 CREATE POLICY "Patients can view own record"
   ON public.patients FOR SELECT
   USING (user_id = auth.uid());
 
--- Caregivers can view linked patients
+DROP POLICY IF EXISTS "Caregivers can view linked patients" ON public.patients;
 CREATE POLICY "Caregivers can view linked patients"
   ON public.patients FOR SELECT
-  USING (
-    get_user_role() = 'caregiver'
-    AND id IN (
-      SELECT patient_id FROM public.caregiver_patient_links
-      WHERE caregiver_id = auth.uid()
-    )
-  );
+  USING (public.is_caregiver_linked_to_patient(id));
 
--- Caregivers can create patients
+DROP POLICY IF EXISTS "Caregivers can create patients" ON public.patients;
 CREATE POLICY "Caregivers can create patients"
   ON public.patients FOR INSERT
-  WITH CHECK (get_user_role() = 'caregiver');
+  WITH CHECK (public.get_user_role() = 'caregiver');
 
--- Caregivers can update linked patients
+DROP POLICY IF EXISTS "Caregivers can update linked patients" ON public.patients;
 CREATE POLICY "Caregivers can update linked patients"
   ON public.patients FOR UPDATE
-  USING (
-    get_user_role() = 'caregiver'
-    AND id IN (
-      SELECT patient_id FROM public.caregiver_patient_links
-      WHERE caregiver_id = auth.uid()
-    )
-  );
+  USING (public.is_caregiver_linked_to_patient(id));
 
 -- =====================================================
 -- CAREGIVER-PATIENT LINKS POLICIES
 -- =====================================================
--- Caregivers can view their own links
+DROP POLICY IF EXISTS "Caregivers can view own links" ON public.caregiver_patient_links;
 CREATE POLICY "Caregivers can view own links"
   ON public.caregiver_patient_links FOR SELECT
   USING (caregiver_id = auth.uid());
 
--- Caregivers can create links
+DROP POLICY IF EXISTS "Caregivers can create links" ON public.caregiver_patient_links;
 CREATE POLICY "Caregivers can create links"
   ON public.caregiver_patient_links FOR INSERT
-  WITH CHECK (
-    get_user_role() = 'caregiver'
-    AND caregiver_id = auth.uid()
-  );
+  WITH CHECK (public.get_user_role() = 'caregiver' AND caregiver_id = auth.uid());
 
--- Caregivers can delete their own links
+DROP POLICY IF EXISTS "Caregivers can delete own links" ON public.caregiver_patient_links;
 CREATE POLICY "Caregivers can delete own links"
   ON public.caregiver_patient_links FOR DELETE
   USING (caregiver_id = auth.uid());
@@ -269,157 +295,146 @@ CREATE POLICY "Caregivers can delete own links"
 -- =====================================================
 -- REMINDERS POLICIES
 -- =====================================================
--- Patients can view their own reminders
+DROP POLICY IF EXISTS "Patients can view own reminders" ON public.reminders;
 CREATE POLICY "Patients can view own reminders"
   ON public.reminders FOR SELECT
-  USING (
-    patient_id IN (
-      SELECT id FROM public.patients WHERE user_id = auth.uid()
-    )
-  );
+  USING (public.is_patient_owner(patient_id));
 
--- Caregivers can view reminders for linked patients
+DROP POLICY IF EXISTS "Caregivers can view linked patient reminders" ON public.reminders;
 CREATE POLICY "Caregivers can view linked patient reminders"
   ON public.reminders FOR SELECT
-  USING (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
--- Caregivers can create reminders for linked patients
+DROP POLICY IF EXISTS "Caregivers can create reminders" ON public.reminders;
 CREATE POLICY "Caregivers can create reminders"
   ON public.reminders FOR INSERT
-  WITH CHECK (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  WITH CHECK (public.is_caregiver_linked_to_patient(patient_id));
 
--- Caregivers can update reminders for linked patients
+DROP POLICY IF EXISTS "Caregivers can update reminders" ON public.reminders;
 CREATE POLICY "Caregivers can update reminders"
   ON public.reminders FOR UPDATE
-  USING (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
--- Caregivers can delete reminders for linked patients
+DROP POLICY IF EXISTS "Caregivers can delete reminders" ON public.reminders;
 CREATE POLICY "Caregivers can delete reminders"
   ON public.reminders FOR DELETE
-  USING (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
 -- =====================================================
 -- REMINDER COMPLETIONS POLICIES
 -- =====================================================
--- Patients can view their own completions
+DROP POLICY IF EXISTS "Patients can view own completions" ON public.reminder_completions;
 CREATE POLICY "Patients can view own completions"
   ON public.reminder_completions FOR SELECT
-  USING (
-    patient_id IN (
-      SELECT id FROM public.patients WHERE user_id = auth.uid()
-    )
-  );
+  USING (public.is_patient_owner(patient_id));
 
--- Caregivers can view completions for linked patients
+DROP POLICY IF EXISTS "Caregivers can view linked patient completions" ON public.reminder_completions;
 CREATE POLICY "Caregivers can view linked patient completions"
   ON public.reminder_completions FOR SELECT
-  USING (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
--- Patients can create their own completions
+DROP POLICY IF EXISTS "Patients can create completions" ON public.reminder_completions;
 CREATE POLICY "Patients can create completions"
   ON public.reminder_completions FOR INSERT
-  WITH CHECK (
-    patient_id IN (
-      SELECT id FROM public.patients WHERE user_id = auth.uid()
-    )
-  );
+  WITH CHECK (public.is_patient_owner(patient_id));
+
+DROP POLICY IF EXISTS "Caregivers can create completions" ON public.reminder_completions;
+CREATE POLICY "Caregivers can create completions"
+  ON public.reminder_completions FOR INSERT
+  WITH CHECK (public.is_caregiver_linked_to_patient(patient_id));
+
+DROP POLICY IF EXISTS "Patients can update own completions" ON public.reminder_completions;
+CREATE POLICY "Patients can update own completions"
+  ON public.reminder_completions FOR UPDATE
+  USING (public.is_patient_owner(patient_id));
+
+DROP POLICY IF EXISTS "Caregivers can update linked completions" ON public.reminder_completions;
+CREATE POLICY "Caregivers can update linked completions"
+  ON public.reminder_completions FOR UPDATE
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
 -- =====================================================
 -- MEMORIES POLICIES
 -- =====================================================
--- Patients can view their own memories
+DROP POLICY IF EXISTS "Patients can view own memories" ON public.memories;
 CREATE POLICY "Patients can view own memories"
   ON public.memories FOR SELECT
-  USING (
-    patient_id IN (
-      SELECT id FROM public.patients WHERE user_id = auth.uid()
-    )
-  );
+  USING (public.is_patient_owner(patient_id));
 
--- Caregivers can view memories for linked patients
+DROP POLICY IF EXISTS "Caregivers can view linked patient memories" ON public.memories;
 CREATE POLICY "Caregivers can view linked patient memories"
   ON public.memories FOR SELECT
-  USING (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
--- Caregivers can create memories for linked patients
+DROP POLICY IF EXISTS "Caregivers can create memories" ON public.memories;
 CREATE POLICY "Caregivers can create memories"
   ON public.memories FOR INSERT
-  WITH CHECK (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  WITH CHECK (public.is_caregiver_linked_to_patient(patient_id));
 
--- Caregivers can update memories for linked patients
+DROP POLICY IF EXISTS "Caregivers can update memories" ON public.memories;
 CREATE POLICY "Caregivers can update memories"
   ON public.memories FOR UPDATE
-  USING (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
--- Caregivers can delete memories for linked patients
+DROP POLICY IF EXISTS "Caregivers can delete memories" ON public.memories;
 CREATE POLICY "Caregivers can delete memories"
   ON public.memories FOR DELETE
-  USING (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
 -- =====================================================
 -- GAME SESSIONS POLICIES
 -- =====================================================
--- Patients can view their own game sessions
+DROP POLICY IF EXISTS "Patients can view own game sessions" ON public.game_sessions;
 CREATE POLICY "Patients can view own game sessions"
   ON public.game_sessions FOR SELECT
-  USING (
-    patient_id IN (
-      SELECT id FROM public.patients WHERE user_id = auth.uid()
-    )
-  );
+  USING (public.is_patient_owner(patient_id));
 
--- Caregivers can view game sessions for linked patients
+DROP POLICY IF EXISTS "Caregivers can view linked patient game sessions" ON public.game_sessions;
 CREATE POLICY "Caregivers can view linked patient game sessions"
   ON public.game_sessions FOR SELECT
-  USING (
-    get_user_role() = 'caregiver'
-    AND is_caregiver_linked_to_patient(patient_id)
-  );
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
--- Patients can create their own game sessions
+DROP POLICY IF EXISTS "Patients can create game sessions" ON public.game_sessions;
 CREATE POLICY "Patients can create game sessions"
   ON public.game_sessions FOR INSERT
-  WITH CHECK (
-    patient_id IN (
-      SELECT id FROM public.patients WHERE user_id = auth.uid()
-    )
-  );
+  WITH CHECK (public.is_patient_owner(patient_id));
+
+DROP POLICY IF EXISTS "Caregivers can create game sessions" ON public.game_sessions;
+CREATE POLICY "Caregivers can create game sessions"
+  ON public.game_sessions FOR INSERT
+  WITH CHECK (public.is_caregiver_linked_to_patient(patient_id));
+
+DROP POLICY IF EXISTS "Patients can update own game sessions" ON public.game_sessions;
+CREATE POLICY "Patients can update own game sessions"
+  ON public.game_sessions FOR UPDATE
+  USING (public.is_patient_owner(patient_id));
+
+DROP POLICY IF EXISTS "Caregivers can update linked game sessions" ON public.game_sessions;
+CREATE POLICY "Caregivers can update linked game sessions"
+  ON public.game_sessions FOR UPDATE
+  USING (public.is_caregiver_linked_to_patient(patient_id));
 
 -- =====================================================
 -- STORAGE BUCKET FOR MEMORY PHOTOS
 -- =====================================================
--- Note: This must be created via Supabase dashboard or CLI
--- INSERT INTO storage.buckets (id, name, public) VALUES ('memory-photos', 'memory-photos', false);
+-- Create bucket if it doesn't exist (idempotent)
+-- Note: Run in Supabase Dashboard > Storage > New Bucket if this fails
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'memory-photos') THEN
+    INSERT INTO storage.buckets (id, name, public) VALUES ('memory-photos', 'memory-photos', false);
+  END IF;
+END
+$$;
 
--- Storage policies (apply after bucket creation)
+-- =====================================================
+-- STORAGE POLICIES
+-- =====================================================
+-- FIX: Qualified p.id to resolve ambiguity when joining patients + caregiver_patient_links
+-- Both tables have an 'id' column; using p.id makes it explicit.
+
 -- Patients can view their own photos
+DROP POLICY IF EXISTS "Patients can view own memory photos" ON storage.objects;
 CREATE POLICY "Patients can view own memory photos"
   ON storage.objects FOR SELECT
   USING (
@@ -430,36 +445,39 @@ CREATE POLICY "Patients can view own memory photos"
   );
 
 -- Caregivers can view photos for linked patients
+DROP POLICY IF EXISTS "Caregivers can view linked patient memory photos" ON storage.objects;
 CREATE POLICY "Caregivers can view linked patient memory photos"
   ON storage.objects FOR SELECT
   USING (
     bucket_id = 'memory-photos'
     AND (storage.foldername(name))[1] IN (
-      SELECT id::text FROM public.patients p
+      SELECT p.id::text FROM public.patients p
       JOIN public.caregiver_patient_links cpl ON p.id = cpl.patient_id
       WHERE cpl.caregiver_id = auth.uid()
     )
   );
 
 -- Caregivers can upload photos for linked patients
+DROP POLICY IF EXISTS "Caregivers can upload memory photos" ON storage.objects;
 CREATE POLICY "Caregivers can upload memory photos"
   ON storage.objects FOR INSERT
   WITH CHECK (
     bucket_id = 'memory-photos'
     AND (storage.foldername(name))[1] IN (
-      SELECT id::text FROM public.patients p
+      SELECT p.id::text FROM public.patients p
       JOIN public.caregiver_patient_links cpl ON p.id = cpl.patient_id
       WHERE cpl.caregiver_id = auth.uid()
     )
   );
 
 -- Caregivers can delete photos for linked patients
+DROP POLICY IF EXISTS "Caregivers can delete memory photos" ON storage.objects;
 CREATE POLICY "Caregivers can delete memory photos"
   ON storage.objects FOR DELETE
   USING (
     bucket_id = 'memory-photos'
     AND (storage.foldername(name))[1] IN (
-      SELECT id::text FROM public.patients p
+      SELECT p.id::text FROM public.patients p
       JOIN public.caregiver_patient_links cpl ON p.id = cpl.patient_id
       WHERE cpl.caregiver_id = auth.uid()
     )
@@ -481,44 +499,129 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT
-    (SELECT COUNT(*) FROM public.game_sessions WHERE patient_id = patient_uuid) as total_sessions,
-    (SELECT AVG(accuracy) FROM public.game_sessions WHERE patient_id = patient_uuid) as avg_accuracy,
-    (SELECT COUNT(*) FROM public.reminders WHERE patient_id = patient_uuid AND is_active = TRUE) as total_reminders,
-    (SELECT COUNT(*) FROM public.reminder_completions WHERE patient_id = patient_uuid) as completed_reminders,
-    (SELECT MAX(created_at) FROM public.game_sessions WHERE patient_id = patient_uuid) as last_activity;
+    (SELECT COUNT(*)::BIGINT FROM public.game_sessions gs WHERE gs.patient_id = patient_uuid),
+    (SELECT AVG(gs.accuracy) FROM public.game_sessions gs WHERE gs.patient_id = patient_uuid),
+    (SELECT COUNT(*)::BIGINT FROM public.reminders r WHERE r.patient_id = patient_uuid AND r.is_active = TRUE),
+    (SELECT COUNT(*)::BIGINT FROM public.reminder_completions rc WHERE rc.patient_id = patient_uuid),
+    (SELECT MAX(gs.created_at) FROM public.game_sessions gs WHERE gs.patient_id = patient_uuid);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Get recent activity for patient
+-- FIX: Renamed output column from 'created_at' to 'occurred_at' to avoid
+-- conflict with PL/pgSQL variable that shadows the UNION ALL column.
+-- FIX: Fully qualified all column references with table aliases.
 CREATE OR REPLACE FUNCTION get_recent_activity(patient_uuid UUID, limit_count INTEGER DEFAULT 10)
 RETURNS TABLE (
   activity_type TEXT,
   activity_data JSONB,
-  created_at TIMESTAMPTZ
+  occurred_at TIMESTAMPTZ
 ) AS $$
 BEGIN
   RETURN QUERY
   SELECT
-    'game_completed' as activity_type,
-    jsonb_build_object(
-      'game_type', gs.game_type,
-      'accuracy', gs.accuracy,
-      'score', gs.score
-    ) as activity_data,
-    gs.created_at
-  FROM public.game_sessions gs
-  WHERE gs.patient_id = patient_uuid
-  UNION ALL
-  SELECT
-    'reminder_completed' as activity_type,
-    jsonb_build_object(
-      'reminder_id', rc.reminder_id,
-      'status', rc.status
-    ) as activity_data,
-    rc.completed_at as created_at
-  FROM public.reminder_completions rc
-  WHERE rc.patient_id = patient_uuid
-  ORDER BY created_at DESC
+    sub.activity_type,
+    sub.activity_data,
+    sub.occurred_at
+  FROM (
+    SELECT
+      'game_completed'::TEXT AS activity_type,
+      jsonb_build_object(
+        'game_type', gs.game_type,
+        'accuracy', gs.accuracy,
+        'score', gs.score
+      ) AS activity_data,
+      gs.created_at AS occurred_at
+    FROM public.game_sessions gs
+    WHERE gs.patient_id = patient_uuid
+    UNION ALL
+    SELECT
+      'reminder_completed'::TEXT AS activity_type,
+      jsonb_build_object(
+        'reminder_id', rc.reminder_id,
+        'status', rc.status
+      ) AS activity_data,
+      rc.completed_at AS occurred_at
+    FROM public.reminder_completions rc
+    WHERE rc.patient_id = patient_uuid
+  ) sub
+  ORDER BY sub.occurred_at DESC
   LIMIT limit_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================================
+-- RPC: Create patient (bypasses INSERT policy)
+-- =====================================================
+-- Atomically inserts patient + caregiver_patient_links.
+-- Caller determined from auth.uid(), never from client input.
+-- Returns the created patient row as JSONB.
+
+DROP FUNCTION IF EXISTS public.create_patient_for_caregiver(TEXT, TEXT, TEXT);
+
+CREATE OR REPLACE FUNCTION public.create_patient_for_caregiver(
+  p_preferred_language TEXT DEFAULT 'en',
+  p_date_of_birth TEXT DEFAULT NULL,
+  p_notes TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_caller_id UUID;
+  v_caller_role TEXT;
+  v_patient_id UUID;
+  v_result JSONB;
+BEGIN
+  v_caller_id := auth.uid();
+
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT p.role INTO v_caller_role
+  FROM public.profiles p
+  WHERE p.id = v_caller_id;
+
+  IF v_caller_role IS NULL THEN
+    RAISE EXCEPTION 'No profile found for authenticated user';
+  END IF;
+
+  IF v_caller_role != 'caregiver' THEN
+    RAISE EXCEPTION 'Only caregivers can create patients';
+  END IF;
+
+  INSERT INTO public.patients (
+    preferred_language,
+    date_of_birth,
+    notes
+  ) VALUES (
+    p_preferred_language,
+    p_date_of_birth::DATE,
+    p_notes
+  )
+  RETURNING id INTO v_patient_id;
+
+  INSERT INTO public.caregiver_patient_links (
+    caregiver_id,
+    patient_id,
+    relationship,
+    is_primary
+  ) VALUES (
+    v_caller_id,
+    v_patient_id,
+    'caregiver',
+    TRUE
+  );
+
+  SELECT to_jsonb(pat.*) INTO v_result
+  FROM public.patients pat
+  WHERE pat.id = v_patient_id;
+
+  RETURN v_result;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.create_patient_for_caregiver(TEXT, TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.create_patient_for_caregiver(TEXT, TEXT, TEXT) TO authenticated;

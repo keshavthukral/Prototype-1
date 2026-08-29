@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import type { User, UserRole } from '@/types'
 import { supabase, isSupabaseConfigured } from './client'
+import { DEMO_PATIENT, DEMO_CAREGIVER } from '@/lib/demo/fixtures'
 
 interface AuthContextType {
   user: User | null
@@ -48,6 +49,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...storedPatient,
         createdAt: new Date(),
       })
+    } else if (!isSupabaseConfigured()) {
+      // Demo mode: auto-create a demo patient session
+      const demoUser: User = {
+        id: DEMO_PATIENT.id,
+        role: 'patient',
+        name: DEMO_PATIENT.name,
+        createdAt: DEMO_PATIENT.createdAt,
+      }
+      try {
+        localStorage.setItem(PATIENT_STORAGE_KEY, JSON.stringify({
+          id: demoUser.id,
+          name: demoUser.name,
+          role: demoUser.role,
+        }))
+      } catch { /* localStorage not available */ }
+      setUser(demoUser)
     }
     setIsLoading(false)
   }, [])
@@ -77,9 +94,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [isOnlineMode])
 
+  // Get demo caregiver info (for caregiver login bypass)
+  const getDemoCaregiver = (): User => ({
+    id: DEMO_CAREGIVER.id,
+    email: DEMO_CAREGIVER.email,
+    role: 'caregiver' as const,
+    name: DEMO_CAREGIVER.name,
+    createdAt: new Date('2026-07-15'),
+  })
+
   const login = async (email: string, password: string): Promise<{ error?: string }> => {
     if (!isOnlineMode) {
-      return { error: 'Online login not available. Running in offline mode.' }
+      // Demo mode: accept any credentials, log in as demo caregiver
+      const demoCaregiver = getDemoCaregiver()
+      setUser(demoCaregiver)
+      return {}
     }
 
     try {

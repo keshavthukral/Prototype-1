@@ -39,19 +39,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24
-              }
-            }
-          }
-        ]
+        // No runtimeCaching for Supabase API — authenticated responses
+        // must never be cached by the service worker. All data flows
+        // through Dexie (IndexedDB) which the app controls directly.
+        runtimeCaching: []
       }
     })
   ],

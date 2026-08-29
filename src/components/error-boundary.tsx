@@ -60,10 +60,10 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
             )}
             <div className="flex justify-center gap-4">
-              <Button variant="outline" onClick={this.handleRetry}>
+              <Button variant="outline" className="h-10 rounded-lg" onClick={this.handleRetry}>
                 Try Again
               </Button>
-              <Button onClick={this.handleReload}>
+              <Button className="h-10 rounded-lg" onClick={this.handleReload}>
                 Reload Page
               </Button>
             </div>
