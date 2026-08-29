@@ -1,65 +1,142 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type {
-  GameResult,
-  Reminder,
-  ReminderCompletion,
-  MemoryEntry,
-  SyncQueueItem,
-  ActivityLog,
-} from '@/types'
 
-// Extended types with local ID for Dexie
-interface LocalGameResult extends GameResult {
+// =====================================================
+// TYPES
+// =====================================================
+
+// Patient Profile
+export interface PatientProfile {
+  id: string
+  name: string
+  preferredLanguage: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Game Session
+export interface GameSession {
+  id: string
+  patientId: string
+  gameType: 'memory' | 'pattern'
+  difficultyLevel: 1 | 2 | 3 | 4
+  accuracy: number
+  responseTimeMs: number
+  hintsUsed: number
+  score: number
+  completedAt: Date
+  createdAt: Date
+  synced: boolean
+}
+
+export interface LocalGameSession extends GameSession {
   localId?: number
 }
 
-interface LocalReminder extends Reminder {
+// Reminder
+export interface Reminder {
+  id: string
+  patientId: string
+  createdBy?: string
+  title: string
+  description?: string
+  reminderType: 'medicine' | 'hydration' | 'activity'
+  scheduledTime?: string
+  frequency: 'daily' | 'weekly' | 'as_needed'
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+  synced: boolean
+}
+
+export interface LocalReminder extends Reminder {
   localId?: number
 }
 
-interface LocalReminderCompletion extends ReminderCompletion {
+// Reminder Completion
+export interface ReminderCompletion {
+  id: string
+  reminderId: string
+  patientId: string
+  status: 'taken' | 'done' | 'skipped' | 'remind_later'
+  completedAt: Date
+  createdAt: Date
+  synced: boolean
+}
+
+export interface LocalReminderCompletion extends ReminderCompletion {
   localId?: number
 }
 
-interface LocalMemoryEntry extends MemoryEntry {
+// Memory
+export interface Memory {
+  id: string
+  patientId: string
+  createdBy?: string
+  name: string
+  relationship?: string
+  description?: string
+  imageStoragePath?: string
+  imageUrl?: string
+  createdAt: Date
+  updatedAt: Date
+  synced: boolean
+}
+
+export interface LocalMemory extends Memory {
   localId?: number
 }
 
-interface LocalActivityLog extends ActivityLog {
+// Activity Log
+export interface ActivityLog {
+  id: string
+  patientId: string
+  activityType: string
+  activityData: Record<string, unknown>
+  createdAt: Date
+  synced: boolean
+}
+
+export interface LocalActivityLog extends ActivityLog {
   localId?: number
 }
 
-interface LocalSyncQueueItem extends SyncQueueItem {
+// Sync Queue Item
+export interface SyncQueueItem {
   queueId: number
+  operation: 'create' | 'update' | 'delete'
+  table: string
+  recordId: string
+  data?: Record<string, unknown>
+  timestamp: Date
+  retryCount: number
+  lastError?: string
 }
 
-interface Setting {
+// Setting
+export interface Setting {
   key: string
   value: string
 }
 
-interface LanguageString {
+// Language String
+export interface LanguageString {
   key: string
   language: string
   value: string
 }
 
-interface PatientProfile {
-  id: string
-  name: string
-  preferredLanguage: string
-  updatedAt: Date
-}
+// =====================================================
+// DEXIE DATABASE
+// =====================================================
 
-// Create Dexie database
 const db = new Dexie('BrainBuddyOffline') as Dexie & {
   patientProfile: EntityTable<PatientProfile, 'id'>
-  gameResults: EntityTable<LocalGameResult, 'localId'>
+  gameSessions: EntityTable<LocalGameSession, 'localId'>
   reminders: EntityTable<LocalReminder, 'localId'>
   reminderCompletions: EntityTable<LocalReminderCompletion, 'localId'>
-  memoryEntries: EntityTable<LocalMemoryEntry, 'localId'>
+  memories: EntityTable<LocalMemory, 'localId'>
   activityLogs: EntityTable<LocalActivityLog, 'localId'>
-  syncQueue: EntityTable<LocalSyncQueueItem, 'queueId'>
+  syncQueue: EntityTable<SyncQueueItem, 'queueId'>
   settings: EntityTable<Setting, 'key'>
   languageStrings: EntityTable<LanguageString, 'key'>
 }
@@ -67,10 +144,10 @@ const db = new Dexie('BrainBuddyOffline') as Dexie & {
 // Define database schema
 db.version(1).stores({
   patientProfile: 'id, name, preferredLanguage',
-  gameResults: '++localId, patientId, gameType, [patientId+gameType], completedAt',
+  gameSessions: '++localId, id, patientId, gameType, [patientId+gameType], completedAt',
   reminders: '++localId, id, patientId, reminderType, isActive',
-  reminderCompletions: '++localId, reminderId, patientId, status, completedAt',
-  memoryEntries: '++localId, id, patientId, name',
+  reminderCompletions: '++localId, id, reminderId, patientId, status, completedAt',
+  memories: '++localId, id, patientId, name',
   activityLogs: '++localId, patientId, activityType, createdAt',
   syncQueue: '++queueId, operation, table, recordId, timestamp, retryCount',
   settings: 'key',
@@ -79,7 +156,10 @@ db.version(1).stores({
 
 export { db }
 
-// Database operations
+// =====================================================
+// DATABASE OPERATIONS
+// =====================================================
+
 export const dbOperations = {
   // Patient Profile
   async getPatientProfile(id: string): Promise<PatientProfile | undefined> {
@@ -90,21 +170,58 @@ export const dbOperations = {
     await db.patientProfile.put({ ...profile, updatedAt: new Date() })
   },
 
-  // Game Results
-  async saveGameResult(result: Omit<LocalGameResult, 'localId'>): Promise<number> {
-    const localId = await db.gameResults.add(result as LocalGameResult)
-    await addToSyncQueue('create', 'game_results', result.id, result)
+  // Game Sessions
+  async saveGameSession(session: Omit<LocalGameSession, 'localId'>): Promise<number> {
+    const localId = await db.gameSessions.add(session as LocalGameSession)
+    await addToSyncQueue('create', 'game_sessions', session.id, session)
     return localId as number
   },
 
-  async getGameResults(patientId: string, gameType?: string): Promise<LocalGameResult[]> {
+  async getGameSessions(patientId: string, gameType?: string): Promise<LocalGameSession[]> {
     if (gameType) {
-      return db.gameResults
+      return db.gameSessions
         .where('[patientId+gameType]')
         .equals([patientId, gameType])
         .toArray()
     }
-    return db.gameResults.where('patientId').equals(patientId).toArray()
+    return db.gameSessions.where('patientId').equals(patientId).toArray()
+  },
+
+  async getRecentGameSessions(patientId: string, limit: number = 10): Promise<LocalGameSession[]> {
+    return db.gameSessions
+      .where('patientId')
+      .equals(patientId)
+      .reverse()
+      .limit(limit)
+      .toArray()
+  },
+
+  async getGameSessionStats(patientId: string, gameType: string): Promise<{
+    averageAccuracy: number
+    sessionsPlayed: number
+    currentDifficulty: number
+  }> {
+    const sessions = await db.gameSessions
+      .where('patientId')
+      .equals(patientId)
+      .and((s) => s.gameType === gameType)
+      .toArray()
+
+    if (sessions.length === 0) {
+      return { averageAccuracy: 0, sessionsPlayed: 0, currentDifficulty: 1 }
+    }
+
+    const averageAccuracy = sessions.reduce((sum, s) => sum + s.accuracy, 0) / sessions.length
+    const sortedSessions = sessions.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    )
+    const latestSession = sortedSessions[0]
+
+    return {
+      averageAccuracy,
+      sessionsPlayed: sessions.length,
+      currentDifficulty: latestSession?.difficultyLevel ?? 1,
+    }
   },
 
   // Reminders
@@ -122,6 +239,10 @@ export const dbOperations = {
       .toArray()
   },
 
+  async getAllReminders(patientId: string): Promise<LocalReminder[]> {
+    return db.reminders.where('patientId').equals(patientId).toArray()
+  },
+
   // Reminder Completions
   async saveReminderCompletion(completion: Omit<LocalReminderCompletion, 'localId'>): Promise<number> {
     const localId = await db.reminderCompletions.add(completion as LocalReminderCompletion)
@@ -136,15 +257,42 @@ export const dbOperations = {
       .toArray()
   },
 
-  // Memory Entries
-  async saveMemoryEntry(entry: Omit<LocalMemoryEntry, 'localId'>): Promise<number> {
-    const localId = await db.memoryEntries.put(entry as LocalMemoryEntry)
-    await addToSyncQueue(entry.id ? 'update' : 'create', 'memory_entries', entry.id, entry)
+  async getReminderCompletionStats(patientId: string): Promise<{
+    total: number
+    completed: number
+    completionRate: number
+  }> {
+    const reminders = await db.reminders
+      .where('patientId')
+      .equals(patientId)
+      .and((r) => r.isActive)
+      .toArray()
+
+    const completions = await db.reminderCompletions
+      .where('patientId')
+      .equals(patientId)
+      .toArray()
+
+    return {
+      total: reminders.length,
+      completed: completions.length,
+      completionRate: reminders.length > 0 ? (completions.length / reminders.length) * 100 : 0,
+    }
+  },
+
+  // Memories
+  async saveMemory(memory: Omit<LocalMemory, 'localId'>): Promise<number> {
+    const localId = await db.memories.put(memory as LocalMemory)
+    await addToSyncQueue(memory.id ? 'update' : 'create', 'memories', memory.id, memory)
     return localId as number
   },
 
-  async getMemoryEntries(patientId: string): Promise<LocalMemoryEntry[]> {
-    return db.memoryEntries.where('patientId').equals(patientId).toArray()
+  async getMemories(patientId: string): Promise<LocalMemory[]> {
+    return db.memories.where('patientId').equals(patientId).toArray()
+  },
+
+  async getMemory(id: string): Promise<LocalMemory | undefined> {
+    return db.memories.where('id').equals(id).first()
   },
 
   // Activity Logs
@@ -190,9 +338,22 @@ export const dbOperations = {
     }))
     await db.languageStrings.bulkPut(entries)
   },
+
+  // Check if demo mode
+  async isDemoMode(): Promise<boolean> {
+    const mode = await dbOperations.getSetting('app-mode')
+    return mode === 'demo'
+  },
+
+  async setDemoMode(isDemo: boolean): Promise<void> {
+    await dbOperations.setSetting('app-mode', isDemo ? 'demo' : 'online')
+  },
 }
 
-// Sync Queue operations
+// =====================================================
+// SYNC QUEUE OPERATIONS
+// =====================================================
+
 async function addToSyncQueue(
   operation: 'create' | 'update' | 'delete',
   table: string,
@@ -210,7 +371,7 @@ async function addToSyncQueue(
 }
 
 export const syncQueueOperations = {
-  async getPendingItems(): Promise<LocalSyncQueueItem[]> {
+  async getPendingItems(): Promise<SyncQueueItem[]> {
     return db.syncQueue.orderBy('timestamp').toArray()
   },
 
@@ -232,8 +393,21 @@ export const syncQueueOperations = {
     return db.syncQueue.count()
   },
 
+  async getPendingCountByTable(table: string): Promise<number> {
+    return db.syncQueue.where('table').equals(table).count()
+  },
+
   async clearOldItems(maxAgeMs: number): Promise<void> {
     const cutoff = new Date(Date.now() - maxAgeMs)
     await db.syncQueue.where('timestamp').below(cutoff).delete()
+  },
+
+  async clearAll(): Promise<void> {
+    await db.syncQueue.clear()
+  },
+
+  // Get items by table
+  async getPendingByTable(table: string): Promise<SyncQueueItem[]> {
+    return db.syncQueue.where('table').equals(table).toArray()
   },
 }

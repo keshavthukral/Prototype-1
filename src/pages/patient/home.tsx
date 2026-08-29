@@ -11,21 +11,33 @@ export function PatientHomePage() {
   const navigate = useNavigate()
   const { t } = useLanguage()
   const { user } = useAuth()
-  const { status } = useSync()
+  const { status, isOnline, mode, pendingCount } = useSync()
 
   const getStatusBadge = () => {
-    switch (status) {
-      case 'online':
-        return <Badge variant="success">{t('online')}</Badge>
-      case 'offline':
-        return <Badge variant="secondary">{t('offline')}</Badge>
-      case 'syncing':
-        return <Badge variant="warning">{t('syncing')}</Badge>
-      case 'sync_complete':
-        return <Badge variant="success">{t('sync_complete')}</Badge>
-      default:
-        return null
+    // Show demo mode badge
+    if (mode === 'demo') {
+      return <Badge variant="secondary">DEMO MODE</Badge>
     }
+
+    // Show sync status
+    if (status === 'syncing') {
+      return <Badge variant="warning">{t('syncing')}</Badge>
+    }
+
+    if (status === 'complete') {
+      return <Badge variant="success">{t('sync_complete')}</Badge>
+    }
+
+    if (status === 'error') {
+      return <Badge variant="destructive">Sync Error</Badge>
+    }
+
+    // Show online/offline status
+    if (isOnline) {
+      return <Badge variant="success">{t('online')}</Badge>
+    }
+
+    return <Badge variant="secondary">{t('offline')}</Badge>
   }
 
   return (
@@ -40,6 +52,13 @@ export function PatientHomePage() {
           </div>
           {getStatusBadge()}
         </div>
+
+        {/* Pending sync indicator */}
+        {pendingCount > 0 && mode === 'online' && (
+          <div className="mb-4 text-sm text-muted-foreground">
+            {pendingCount} changes pending sync
+          </div>
+        )}
 
         {/* Main Actions */}
         <div className="space-y-4">

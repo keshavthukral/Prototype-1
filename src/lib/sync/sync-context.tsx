@@ -1,21 +1,31 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import type { SyncStatus } from '@/types'
 import { syncQueueOperations } from '@/lib/db/database'
 import { isSupabaseConfigured } from '@/lib/supabase/client'
+import { syncService, getSyncStatusForUI } from './sync-service'
 
 interface SyncContextType {
-  status: SyncStatus
-  pendingCount: number
+  mode: 'demo' | 'online'
+  status: 'idle' | 'syncing' | 'error' | 'complete'
   isOnline: boolean
+  pendingCount: number
+  lastSyncTime: Date | null
   sync: () => Promise<void>
+  retrySync: () => Promise<void>
 }
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined)
 
 export function SyncProvider({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<SyncStatus>('offline')
-  const [pendingCount, setPendingCount] = useState(0)
+  const [mode, setMode] = useState<'demo' | 'online'>('demo')
+  const [status, setStatus] = useState<'idle' | 'syncing' | 'error' | 'complete'>('idle')
   const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
+
+  // Update mode based on Supabase configuration
+  useEffect(() => {
+    setMode(isSupabaseConfigured() ? 'online' : 'demo')
+  }, [])
 
   // Update online status
   useEffect(() => {
@@ -44,112 +54,78 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval)
   }, [])
 
-  // Update status based on online state and pending items
+  // Auto-sync when online
   useEffect(() => {
-    if (!isOnline) {
-      setStatus('offline')
-    } else if (pendingCount > 0) {
-      setStatus('syncing')
-    } else {
-      setStatus('online')
+    if (isOnline && mode === 'online' && pendingCount > 0 && status !== 'syncing') {
+      sync()
     }
-  }, [isOnline, pendingCount])
+  }, [isOnline, mode, pendingCount, status])
+
+  // Start auto-sync on mount
+  useEffect(() => {
+    if (mode === 'online') {
+      syncService.startAutoSync(30000) // Sync every 30 seconds
+    }
+
+    return () => {
+      syncService.stopAutoSync()
+    }
+  }, [mode])
 
   const sync = useCallback(async () => {
-    if (!isOnline || !isSupabaseConfigured()) {
-      return
-    }
+    if (status === 'syncing') return
+    if (mode === 'demo') return
+    if (!isOnline) return
 
     setStatus('syncing')
 
     try {
-      const pendingItems = await syncQueueOperations.getPendingItems()
-
-      for (const item of pendingItems) {
-        try {
-          const { operation, table, recordId } = item
-
-          // Skip unknown tables
-          const validTables = ['game_results', 'reminders', 'reminder_completions', 'memory_entries', 'activity_logs']
-          if (!validTables.includes(table)) {
-            console.warn(`Unknown table: ${table}`)
-            continue
-          }
-
-          // Use a helper function to handle the Supabase operations
-          // This avoids complex type issues with dynamic table names
-          await syncToSupabase(table, operation, recordId)
-
-          await syncQueueOperations.markSynced(item.queueId!)
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-          await syncQueueOperations.markFailed(item.queueId!, errorMessage)
-          
-          // If too many retries, stop syncing
-          if (item.retryCount >= 5) {
-            console.error(`Failed to sync item ${item.queueId} after 5 retries:`, errorMessage)
-            continue
-          }
-        }
+      const result = await syncService.syncAll()
+      
+      if (result.success) {
+        setStatus('complete')
+        setLastSyncTime(new Date())
+        
+        // Reset to idle after 3 seconds
+        setTimeout(() => setStatus('idle'), 3000)
+      } else {
+        setStatus('error')
+        
+        // Reset to idle after 5 seconds
+        setTimeout(() => setStatus('idle'), 5000)
       }
 
-      // Clean up old items (older than 30 days)
-      await syncQueueOperations.clearOldItems(30 * 24 * 60 * 60 * 1000)
-
-      setStatus('sync_complete')
-      
-      // Reset to online after a short delay
-      setTimeout(() => {
-        if (isOnline) {
-          setStatus('online')
-        }
-      }, 2000)
+      // Update pending count
+      const count = await syncQueueOperations.getPendingCount()
+      setPendingCount(count)
     } catch (error) {
       console.error('Sync failed:', error)
-      setStatus('online')
+      setStatus('error')
+      
+      // Reset to idle after 5 seconds
+      setTimeout(() => setStatus('idle'), 5000)
     }
-  }, [isOnline, pendingCount])
+  }, [status, mode, isOnline])
 
-  // Auto-sync when coming online
-  useEffect(() => {
-    if (isOnline && pendingCount > 0) {
-      sync()
-    }
-  }, [isOnline, pendingCount, sync])
-
-  // Periodic sync attempt
-  useEffect(() => {
-    if (!isOnline) return
-
-    const interval = setInterval(() => {
-      if (pendingCount > 0) {
-        sync()
-      }
-    }, 60000) // Try syncing every minute
-
-    return () => clearInterval(interval)
-  }, [isOnline, pendingCount, sync])
+  const retrySync = useCallback(async () => {
+    await sync()
+  }, [sync])
 
   return (
-    <SyncContext.Provider value={{ status, pendingCount, isOnline, sync }}>
+    <SyncContext.Provider
+      value={{
+        mode,
+        status,
+        isOnline,
+        pendingCount,
+        lastSyncTime,
+        sync,
+        retrySync,
+      }}
+    >
       {children}
     </SyncContext.Provider>
   )
-}
-
-// Helper function to sync data to Supabase
-async function syncToSupabase(
-  table: string,
-  operation: 'create' | 'update' | 'delete',
-  recordId: string
-) {
-  // This is a simplified sync function
-  // In production, you would implement proper type-safe operations
-  console.log(`Syncing ${operation} to ${table} for record ${recordId}`)
-  
-  // For now, we'll just log the sync operation
-  // The actual Supabase operations would be implemented here
-  // when the project is fully set up with proper types
 }
 
 export function useSync() {
@@ -159,3 +135,6 @@ export function useSync() {
   }
   return context
 }
+
+// Re-export sync status getter
+export { getSyncStatusForUI }
