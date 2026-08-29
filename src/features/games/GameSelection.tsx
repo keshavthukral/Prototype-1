@@ -17,7 +17,7 @@ export function GameSelection() {
         {/* Back */}
         <button
           onClick={() => navigate('/patient')}
-          className="mb-8 flex h-12 w-fit items-center gap-2 rounded-lg px-2 text-base text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="mb-8 flex h-12 w-fit cursor-pointer items-center gap-2 rounded-lg px-2 text-base text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <ArrowLeft className="h-5 w-5" />
           Home

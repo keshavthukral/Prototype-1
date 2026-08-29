@@ -114,6 +114,22 @@ export async function saveGameSession(params: {
   }
 }
 
+/** Store detailed game behavior locally without changing the remote schema. */
+export async function saveRichGameMetrics(params: {
+  patientId: string
+  gameType: 'memory' | 'pattern'
+  metrics: Record<string, unknown>
+}): Promise<void> {
+  await db.activityLogs.add({
+    id: `game-metrics-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    patientId: params.patientId,
+    activityType: `${params.gameType}_session_metrics`,
+    activityData: params.metrics,
+    createdAt: new Date(),
+    synced: false,
+  })
+}
+
 /**
  * Get recent session results for a patient, ordered newest first.
  * Used by the adaptive engine.

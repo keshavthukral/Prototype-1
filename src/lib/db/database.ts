@@ -39,9 +39,11 @@ export interface Reminder {
   createdBy?: string
   title: string
   description?: string
-  reminderType: 'medicine' | 'hydration' | 'activity'
+  reminderType: 'medicine' | 'hydration' | 'meal' | 'walk' | 'family_call' | 'daily_activity'
   scheduledTime?: string
-  frequency: 'daily' | 'weekly' | 'as_needed'
+  frequency: 'once' | 'daily' | 'specific_days'
+  specificDays?: number[]
+  snoozedUntil?: Date
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -100,6 +102,47 @@ export interface LocalActivityLog extends ActivityLog {
   localId?: number
 }
 
+export interface DailyReport {
+  id: string
+  patientId: string
+  reportDate: string
+  remindersCompleted: number
+  remindersPostponed: number
+  remindersTotal: number
+  dailyCheckInCompleted?: boolean
+  sourceUpdatedAt: Date
+  createdAt: Date
+  updatedAt: Date
+  synced: boolean
+}
+
+export type ReportedMood = 'very_good' | 'good' | 'okay' | 'not_so_good'
+export type ReportedEnergy = 'good' | 'okay' | 'low'
+
+export interface WellBeingCheckIn {
+  id: string
+  patientId: string
+  reportedAt: Date
+  reportedMood: ReportedMood
+  reportedEnergy: ReportedEnergy
+  requestedContact: boolean
+  createdAt: Date
+  synced: boolean
+}
+
+export interface SupportRequest {
+  id: string
+  patientId: string
+  requestType: 'contact_me'
+  priority: 'high'
+  status: 'pending' | 'acknowledged'
+  requestedAt: Date
+  acknowledgedAt?: Date
+  createdAt: Date
+  updatedAt: Date
+  synced: boolean
+}
+
 // Sync Queue Item
 export interface SyncQueueItem {
   queueId: number
@@ -136,6 +179,9 @@ const db = new Dexie('BrainBuddyOffline') as Dexie & {
   reminderCompletions: EntityTable<LocalReminderCompletion, 'localId'>
   memories: EntityTable<LocalMemory, 'localId'>
   activityLogs: EntityTable<LocalActivityLog, 'localId'>
+  dailyReports: EntityTable<DailyReport, 'id'>
+  wellBeingCheckIns: EntityTable<WellBeingCheckIn, 'id'>
+  supportRequests: EntityTable<SupportRequest, 'id'>
   syncQueue: EntityTable<SyncQueueItem, 'queueId'>
   settings: EntityTable<Setting, 'key'>
   languageStrings: EntityTable<LanguageString, 'key'>
@@ -149,6 +195,48 @@ db.version(1).stores({
   reminderCompletions: '++localId, id, reminderId, patientId, status, completedAt',
   memories: '++localId, id, patientId, name',
   activityLogs: '++localId, patientId, activityType, createdAt',
+  syncQueue: '++queueId, operation, table, recordId, timestamp, retryCount',
+  settings: 'key',
+  languageStrings: 'key, language',
+})
+
+db.version(2).stores({
+  patientProfile: 'id, name, preferredLanguage',
+  gameSessions: '++localId, id, patientId, gameType, [patientId+gameType], completedAt',
+  reminders: '++localId, id, patientId, reminderType, isActive, snoozedUntil',
+  reminderCompletions: '++localId, id, reminderId, patientId, status, completedAt',
+  memories: '++localId, id, patientId, name',
+  activityLogs: '++localId, patientId, activityType, createdAt',
+  dailyReports: 'id, [patientId+reportDate], patientId, reportDate',
+  syncQueue: '++queueId, operation, table, recordId, timestamp, retryCount',
+  settings: 'key',
+  languageStrings: 'key, language',
+})
+
+db.version(3).stores({
+  patientProfile: 'id, name, preferredLanguage',
+  gameSessions: '++localId, id, patientId, gameType, [patientId+gameType], completedAt',
+  reminders: '++localId, id, patientId, reminderType, isActive, snoozedUntil',
+  reminderCompletions: '++localId, id, reminderId, patientId, status, completedAt',
+  memories: '++localId, id, patientId, name',
+  activityLogs: '++localId, patientId, activityType, createdAt',
+  dailyReports: 'id, [patientId+reportDate], patientId, reportDate',
+  wellBeingCheckIns: 'id, [patientId+reportedAt], patientId, reportedAt',
+  syncQueue: '++queueId, operation, table, recordId, timestamp, retryCount',
+  settings: 'key',
+  languageStrings: 'key, language',
+})
+
+db.version(4).stores({
+  patientProfile: 'id, name, preferredLanguage',
+  gameSessions: '++localId, id, patientId, gameType, [patientId+gameType], completedAt',
+  reminders: '++localId, id, patientId, reminderType, isActive, snoozedUntil',
+  reminderCompletions: '++localId, id, reminderId, patientId, status, completedAt',
+  memories: '++localId, id, patientId, name',
+  activityLogs: '++localId, patientId, activityType, createdAt',
+  dailyReports: 'id, [patientId+reportDate], patientId, reportDate',
+  wellBeingCheckIns: 'id, [patientId+reportedAt], patientId, reportedAt',
+  supportRequests: 'id, patientId, status, priority, requestedAt',
   syncQueue: '++queueId, operation, table, recordId, timestamp, retryCount',
   settings: 'key',
   languageStrings: 'key, language',

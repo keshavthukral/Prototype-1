@@ -3,6 +3,8 @@ export { patientRepository } from './patient'
 export { reminderRepository } from './reminder'
 export { memoryRepository } from './memory'
 export { saveGameSession, getRecentSessions, getCurrentDifficulty } from './game-session'
+export { saveWellBeingCheckIn, getWellBeingCheckIns, getLatestCheckIn } from './check-in'
+export { createSupportRequest, getSupportRequests } from './support-request'
 
 // Type exports
 export type { Patient } from './patient'

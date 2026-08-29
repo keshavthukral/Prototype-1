@@ -38,7 +38,7 @@ export function LanguageSelectPage() {
               onClick={() => handleSelect(code)}
               className={cn(
                 'flex w-full flex-col items-center gap-2 rounded-xl border-2 p-8',
-                'text-center transition-all duration-150',
+                'cursor-pointer text-center transition-colors duration-150',
                 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring',
                 'active:scale-[0.98]',
                 language === code

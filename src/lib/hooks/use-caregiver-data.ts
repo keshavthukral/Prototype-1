@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { db, dbOperations } from '@/lib/db/database'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase/client'
-import type { LocalReminder, LocalReminderCompletion } from '@/lib/db/database'
+import type { LocalReminder, LocalReminderCompletion, SupportRequest } from '@/lib/db/database'
 import type { LocalMemory } from '@/lib/db/database'
 
 // =====================================================
@@ -50,6 +50,7 @@ export interface DashboardData {
   memories: LocalMemory[]
   activityFeed: ActivityFeedItem[]
   syncPendingCount: number
+  supportRequests: SupportRequest[]
   isLoading: boolean
   error: string | null
   refresh: () => Promise<void>
@@ -97,6 +98,7 @@ export function useCaregiverData(patientId: string | null): DashboardData {
     memories: [],
     activityFeed: [],
     syncPendingCount: 0,
+    supportRequests: [],
     isLoading: true,
     error: null,
     refresh: async () => {},
@@ -119,6 +121,7 @@ export function useCaregiverData(patientId: string | null): DashboardData {
         completions,
         memories,
         pendingCount,
+        supportRequests,
       ] = await Promise.all([
         dbOperations.getPatientProfile(patientId),
         dbOperations.getRecentGameSessions(patientId, 30),
@@ -126,6 +129,7 @@ export function useCaregiverData(patientId: string | null): DashboardData {
         dbOperations.getReminderCompletions(patientId),
         dbOperations.getMemories(patientId),
         db.syncQueue.count(),
+        db.supportRequests.where('patientId').equals(patientId).reverse().sortBy('requestedAt'),
       ])
 
       // Process sessions
@@ -255,6 +259,7 @@ export function useCaregiverData(patientId: string | null): DashboardData {
         memories,
         activityFeed: feedItems.slice(0, 10),
         syncPendingCount: pendingCount,
+        supportRequests,
         isLoading: false,
         error: null,
         refresh: fetchData,

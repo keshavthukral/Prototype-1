@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,8 +23,9 @@ interface SidebarLayoutProps {
 
 const navItems = [
   { key: 'dashboard', path: '/caregiver/dashboard', icon: LayoutDashboard },
+  { key: 'daily_reports', path: '/caregiver/reports', icon: ClipboardList },
   { key: 'patient_details', path: '/caregiver/patient', icon: User },
-  { key: 'add_reminder', path: '/caregiver/reminders/new', icon: Bell },
+  { key: 'reminders', path: '/caregiver/reminders', icon: Bell },
   { key: 'add_memory', path: '/caregiver/memories/new', icon: BookOpen },
 ] as const
 
@@ -61,7 +63,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
                     setMobileOpen(false)
                   }}
                   className={cn(
-                    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150',
+                    'flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                     isActive
                       ? 'bg-primary/10 text-primary'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'

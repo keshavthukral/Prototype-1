@@ -19,6 +19,9 @@ const TABLE_MAP: Record<string, string> = {
   memories: 'memories',
   activity_logs: 'activity_logs',
   patients: 'patients',
+  daily_reports: 'daily_reports',
+  well_being_check_ins: 'well_being_check_ins',
+  support_requests: 'support_requests',
 }
 
 // Sync service class
@@ -144,7 +147,7 @@ class SyncService {
     }
 
     // Add id to data if not present
-    const recordData = { ...data, id: recordId }
+    const recordData = toRemoteRecord(table, { ...data, id: recordId })
 
     // Use simple fetch for Supabase operations to avoid type issues
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -254,6 +257,8 @@ class SyncService {
             reminderType: reminder.reminder_type,
             scheduledTime: reminder.scheduled_time,
             frequency: reminder.frequency,
+            specificDays: reminder.specific_days ?? [],
+            snoozedUntil: reminder.snoozed_until ? new Date(reminder.snoozed_until) : undefined,
             isActive: reminder.is_active,
             createdAt: new Date(reminder.created_at),
             updatedAt: new Date(reminder.updated_at),
@@ -286,6 +291,46 @@ class SyncService {
           })
         }
       }
+
+      // Pull self-reported well-being check-ins. RLS limits this to the
+      // signed-in patient or their linked caregiver.
+      const checkInsResponse = await fetch(
+        `${supabaseUrl}/rest/v1/well_being_check_ins?order=reported_at.desc&limit=100`,
+        { headers }
+      )
+
+      if (checkInsResponse.ok) {
+        const checkIns = await checkInsResponse.json()
+        for (const checkIn of checkIns) {
+          await db.wellBeingCheckIns.put({
+            id: checkIn.id,
+            patientId: checkIn.patient_id,
+            reportedAt: new Date(checkIn.reported_at),
+            reportedMood: checkIn.reported_mood,
+            reportedEnergy: checkIn.reported_energy,
+            requestedContact: checkIn.requested_contact,
+            createdAt: new Date(checkIn.created_at),
+            synced: true,
+          })
+        }
+      }
+
+      const supportRequestsResponse = await fetch(
+        `${supabaseUrl}/rest/v1/support_requests?order=requested_at.desc&limit=100`,
+        { headers }
+      )
+      if (supportRequestsResponse.ok) {
+        const requests = await supportRequestsResponse.json()
+        for (const request of requests) {
+          await db.supportRequests.put({
+            id: request.id, patientId: request.patient_id, requestType: request.request_type,
+            priority: request.priority, status: request.status,
+            requestedAt: new Date(request.requested_at),
+            acknowledgedAt: request.acknowledged_at ? new Date(request.acknowledged_at) : undefined,
+            createdAt: new Date(request.created_at), updatedAt: new Date(request.updated_at), synced: true,
+          })
+        }
+      }
     } catch (error) {
       console.error('Failed to pull remote changes:', error)
     }
@@ -301,6 +346,16 @@ class SyncService {
       lastSyncTime: this.lastSyncTime,
     }
   }
+}
+
+function toRemoteRecord(table: string, data: Record<string, unknown>): Record<string, unknown> {
+  const iso = (value: unknown) => value instanceof Date ? value.toISOString() : value
+  if (table === 'reminders') return { id: data.id, patient_id: data.patientId, created_by: data.createdBy ?? null, title: data.title, description: data.description ?? null, reminder_type: data.reminderType, scheduled_time: data.scheduledTime ?? null, frequency: data.frequency, specific_days: data.specificDays ?? [], snoozed_until: iso(data.snoozedUntil) ?? null, is_active: data.isActive, created_at: iso(data.createdAt), updated_at: iso(data.updatedAt) }
+  if (table === 'reminder_completions') return { id: data.id, reminder_id: data.reminderId, patient_id: data.patientId, status: data.status, completed_at: iso(data.completedAt), created_at: iso(data.createdAt) }
+  if (table === 'daily_reports') return { id: data.id, patient_id: data.patientId, report_date: data.reportDate, reminders_completed: data.remindersCompleted, reminders_postponed: data.remindersPostponed, reminders_total: data.remindersTotal, daily_check_in_completed: data.dailyCheckInCompleted ?? false, source_updated_at: iso(data.sourceUpdatedAt), created_at: iso(data.createdAt), updated_at: iso(data.updatedAt) }
+  if (table === 'well_being_check_ins') return { id: data.id, patient_id: data.patientId, reported_at: iso(data.reportedAt), reported_mood: data.reportedMood, reported_energy: data.reportedEnergy, requested_contact: data.requestedContact, created_at: iso(data.createdAt) }
+  if (table === 'support_requests') return { id: data.id, patient_id: data.patientId, request_type: data.requestType, priority: data.priority, status: data.status, requested_at: iso(data.requestedAt), acknowledged_at: iso(data.acknowledgedAt) ?? null, created_at: iso(data.createdAt), updated_at: iso(data.updatedAt) }
+  return data
 }
 
 // Export singleton instance

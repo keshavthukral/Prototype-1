@@ -38,7 +38,8 @@ export function DevNetworkToggle() {
             </span>
             <button
               onClick={() => setExpanded(false)}
-              className="rounded p-0.5 text-amber-600 hover:bg-amber-100"
+              className="cursor-pointer rounded p-0.5 text-amber-600 transition-colors duration-150 hover:bg-amber-100 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700"
+              aria-label="Close network controls"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -48,7 +49,7 @@ export function DevNetworkToggle() {
           </p>
           <button
             onClick={toggleNetwork}
-            className={`flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors duration-150 ${
+            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700 ${
               simulatedOffline
                 ? 'bg-amber-600 text-white hover:bg-amber-700'
                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
@@ -73,7 +74,7 @@ export function DevNetworkToggle() {
       ) : (
         <button
           onClick={() => setExpanded(true)}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider shadow-lg transition-colors duration-150 ${
+          className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider shadow-lg transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700 ${
             simulatedOffline
               ? 'bg-amber-500 text-white hover:bg-amber-600'
               : 'bg-amber-100 text-amber-700 hover:bg-amber-200 ring-1 ring-amber-300'

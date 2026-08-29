@@ -85,7 +85,7 @@ export function PatternGamePage() {
           <>
             <Button
               variant="ghost"
-              onClick={() => navigate('/patient/game')}
+              onClick={() => navigate('/patient/games')}
               className="mb-8 h-14 w-fit self-start text-base"
             >
               <ArrowLeft className="mr-2 h-5 w-5" />
@@ -128,7 +128,7 @@ export function PatternGamePage() {
             {/* Progress bar */}
             <div className="mb-8 h-2 w-full overflow-hidden rounded-full bg-border">
               <div
-                className="h-full rounded-full bg-primary transition-all duration-500"
+                className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
                 style={{ width: `${((currentRound) / totalRounds) * 100}%` }}
               />
             </div>
@@ -161,7 +161,8 @@ export function PatternGamePage() {
                     key={option}
                     onClick={() => handleAnswer(option)}
                     disabled={selectedAnswer !== null}
-                    className={`flex h-20 items-center justify-center rounded-2xl border-2 text-4xl transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                    aria-pressed={isSelected}
+                    className={`relative flex h-20 cursor-pointer items-center justify-center rounded-2xl border-2 text-4xl transition-colors duration-150 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:active:scale-100 ${
                       showCorrect
                         ? 'border-success bg-success/10'
                         : showWrong
@@ -172,7 +173,7 @@ export function PatternGamePage() {
                     }`}
                   >
                     {option}
-                    {showCorrect && <Check className="absolute h-6 w-6 text-success" />}
+                    {(isSelected || showCorrect) && <Check className={`absolute right-3 top-3 h-6 w-6 ${showCorrect ? 'text-success' : 'text-primary'}`} aria-label={showCorrect ? 'Correct answer' : 'Selected'} />}
                   </button>
                 )
               })}

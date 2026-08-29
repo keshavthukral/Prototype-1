@@ -125,6 +125,7 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Caregiver Dashboard
     dashboard: 'Dashboard',
+    daily_reports: 'Daily Reports',
     patient_details: 'Patient Details',
     recent_activity: 'Recent Activity',
     performance_trends: 'Performance Trends',

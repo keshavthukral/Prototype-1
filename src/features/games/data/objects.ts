@@ -42,7 +42,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 /**
  * Build one round's config: pick targets, generate distractors, merge + shuffle.
- * Always returns exactly 6 options (targets + distractors).
+ * Distractors increase by difficulty while targets stay within 3–6.
  */
 export function buildMemoryRound(
   difficulty: DifficultyLevel,
@@ -54,7 +54,8 @@ export function buildMemoryRound(
 
   const targets = shuffled.slice(0, targetCount)
   const distractorPool = shuffled.slice(targetCount)
-  const distractors = distractorPool.slice(0, 6 - targetCount)
+  const distractorCount = difficulty === 1 ? 2 : difficulty === 2 ? 3 : 4
+  const distractors = distractorPool.slice(0, distractorCount)
 
   const options = shuffle([...targets, ...distractors])
 

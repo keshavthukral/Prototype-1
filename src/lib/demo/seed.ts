@@ -1,9 +1,8 @@
 /**
  * Demo data seeder.
  *
- * On first visit in demo mode, seeds IndexedDB with the fixtures
- * from ./fixtures.ts. Returns immediately if already seeded
- * (checks the 'demo-seeded' setting key).
+ * Seeds versioned demo fixtures into IndexedDB. Existing demo installs are
+ * refreshed with Prototype 2 content without clearing user-created records.
  *
  * This module is the ONLY place demo data enters the database.
  * Demo data is tagged `synced: true` so the sync service skips it.
@@ -29,9 +28,9 @@ export async function seedDemoData(): Promise<boolean> {
   // Never seed when Supabase is configured
   if (isSupabaseConfigured()) return false
 
-  // Check if already seeded
-  const alreadySeeded = await dbOperations.getSetting('demo-seeded')
-  if (alreadySeeded === 'true') return false
+  const seedVersion = await dbOperations.getSetting('demo-seed-version')
+  if (seedVersion === '3') return false
+  const alreadySeeded = await dbOperations.getSetting('demo-seeded') === 'true'
 
   console.info('%c🌱 Seeding demo data…', 'color: #0d9488; font-weight: bold;')
 
@@ -45,16 +44,26 @@ export async function seedDemoData(): Promise<boolean> {
         await db.patientProfile.put(DEMO_PATIENT)
 
         // Game sessions
-        await db.gameSessions.bulkAdd(DEMO_GAME_SESSIONS as never)
+        if (!alreadySeeded) {
+          await db.gameSessions.bulkAdd(DEMO_GAME_SESSIONS as never)
+        }
 
         // Reminders
-        await db.reminders.bulkAdd(DEMO_REMINDERS as never)
+        await db.reminders.where('id').anyOf(['demo-r1', 'demo-r2', 'demo-r3']).delete()
+        for (const reminder of DEMO_REMINDERS) {
+          const existing = await db.reminders.where('id').equals(reminder.id).first()
+          if (existing?.localId) await db.reminders.update(existing.localId, reminder)
+          else await db.reminders.add(reminder as never)
+        }
 
         // Reminder completions
-        await db.reminderCompletions.bulkAdd(DEMO_REMINDER_COMPLETIONS as never)
+        if (DEMO_REMINDER_COMPLETIONS.length > 0) {
+          await db.reminderCompletions.bulkPut(DEMO_REMINDER_COMPLETIONS as never)
+        }
 
         // Memories
-        await db.memories.bulkAdd(DEMO_MEMORIES as never)
+        await db.memories.where('id').anyOf(['demo-m1', 'demo-m2', 'demo-m3', 'demo-m4']).delete()
+        await db.memories.bulkPut(DEMO_MEMORIES as never)
 
         // Settings (mark as seeded)
         for (const setting of DEMO_SETTINGS) {
@@ -65,11 +74,11 @@ export async function seedDemoData(): Promise<boolean> {
 
     console.info('%c✅ Demo data seeded successfully', 'color: #0d9488; font-weight: bold;')
     console.info(
-      '%c   Patient: Anita Devi · Caregiver: Rahul',
+      '%c   Patient: Anita Devi · Caregiver: Rahul Sharma',
       'color: #64748b;'
     )
     console.info(
-      '%c   Sessions: 15 · Reminders: 3 · Memories: 4',
+      '%c   Sessions: 15 · Reminders: 5 · Memories: 5',
       'color: #64748b;'
     )
 
@@ -94,13 +103,15 @@ export async function isDemoSeeded(): Promise<boolean> {
 export async function clearDemoData(): Promise<void> {
   await db.transaction(
     'rw',
-    [db.patientProfile, db.gameSessions, db.reminders, db.reminderCompletions, db.memories, db.settings, db.syncQueue],
+    [db.patientProfile, db.gameSessions, db.reminders, db.reminderCompletions, db.memories, db.wellBeingCheckIns, db.supportRequests, db.settings, db.syncQueue],
     async () => {
       await db.patientProfile.clear()
       await db.gameSessions.clear()
       await db.reminders.clear()
       await db.reminderCompletions.clear()
       await db.memories.clear()
+      await db.wellBeingCheckIns.clear()
+      await db.supportRequests.clear()
       await db.settings.clear()
       await db.syncQueue.clear()
     }

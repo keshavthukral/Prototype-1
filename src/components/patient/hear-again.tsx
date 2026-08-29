@@ -1,91 +1,35 @@
-import { useState, useCallback } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { LoaderCircle, Volume2, VolumeX } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/language-context'
-import { Volume2, VolumeX } from 'lucide-react'
+import { speechService, type SpeechState } from '@/lib/speech/speechService'
 import { cn } from '@/lib/utils'
 
-interface HearAgainProps {
-  text: string
-  rate?: number
-  pitch?: number
-  className?: string
-  label?: string
-  ariaLabel?: string
-}
+interface HearAgainProps { text: string; className?: string; label?: string; ariaLabel?: string; rate?: number; pitch?: number }
 
-const SPEECH_LANG_MAP: Record<string, string> = {
-  en: 'en-US',
-  as: 'as-IN',
-}
-
-export function HearAgain({
-  text,
-  rate = 0.8,
-  pitch = 1.0,
-  className,
-  label,
-  ariaLabel,
-}: HearAgainProps) {
+export function HearAgain({ text, className, label, ariaLabel }: HearAgainProps) {
   const { t, language } = useLanguage()
-  const [speaking, setSpeaking] = useState(false)
-  const [notAvailable, setNotAvailable] = useState(false)
+  const [serviceState, setServiceState] = useState<SpeechState>(speechService.getState())
+  const requestKey = useMemo(() => `${language}:${text}`, [language, text])
+  const ownsActiveRequest = serviceState.requestKey === requestKey
+  const active = ownsActiveRequest && (serviceState.status === 'speaking' || serviceState.status === 'loading')
+  const message = ownsActiveRequest && serviceState.status === 'unavailable' ? serviceState.message : undefined
 
-  const speak = useCallback(() => {
-    if (!text) return
-
-    window.speechSynthesis.cancel()
-
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.rate = rate
-    utterance.pitch = pitch
-
-    const langCode = SPEECH_LANG_MAP[language] ?? 'en-US'
-    utterance.lang = langCode
-
-    const voices = window.speechSynthesis.getVoices()
-    const matchingVoice = voices.find(v => v.lang.startsWith(language))
-    if (matchingVoice) {
-      utterance.voice = matchingVoice
-    }
-
-    utterance.onstart = () => setSpeaking(true)
-    utterance.onend = () => setSpeaking(false)
-    utterance.onerror = () => {
-      setSpeaking(false)
-      setNotAvailable(true)
-    }
-
-    window.speechSynthesis.speak(utterance)
-  }, [text, rate, pitch, language])
-
-  if (notAvailable) {
-    return (
-      <span className={cn('text-sm text-muted-foreground', className)}>
-        {text}
-      </span>
-    )
-  }
+  useEffect(() => speechService.subscribe(setServiceState), [])
+  useEffect(() => () => { if (speechService.getState().requestKey === requestKey) speechService.stop() }, [requestKey])
 
   return (
-    <button
-      onClick={speak}
-      disabled={speaking}
-      className={cn(
-        'inline-flex items-center gap-2 rounded-lg px-4 py-3 text-base font-medium',
-        'transition-colors duration-150',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-        speaking
-          ? 'bg-primary/10 text-primary'
-          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-        className
-      )}
-      aria-label={ariaLabel ?? label ?? t('hear_again')}
-    >
-      {speaking ? (
-        <VolumeX className="h-5 w-5 animate-pulse" />
-      ) : (
-        <Volume2 className="h-5 w-5" />
-      )}
-      <span>{label ?? t('hear_again')}</span>
-    </button>
+    <div className={cn('flex flex-col items-start gap-2', className)}>
+      <button
+        type="button"
+        onClick={() => void speechService.toggle(text, language)}
+        aria-pressed={active}
+        aria-label={active ? 'Stop voice playback' : ariaLabel ?? label ?? t('hear_again')}
+        className="inline-flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-border bg-card px-5 py-3 text-lg font-semibold text-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary"
+      >
+        {ownsActiveRequest && serviceState.status === 'loading' ? <LoaderCircle className="size-6 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : active ? <VolumeX className="size-6" aria-hidden="true" /> : <Volume2 className="size-6" aria-hidden="true" />}
+        <span>{active ? 'Stop' : label ?? t('hear_again')}</span>
+      </button>
+      {message && <p role="status" className="max-w-sm text-base font-medium text-muted-foreground">{message}</p>}
+    </div>
   )
 }

@@ -39,6 +39,13 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+  button:not(:disabled),
+  a[href] {
+    @apply cursor-pointer;
+  }
+  button:disabled {
+    @apply cursor-not-allowed;
+  }
 }
 
 /* Patient-specific styles */
@@ -92,3 +99,7 @@
     --color-ring: #000000;
   }
 }
+
+@keyframes reminder-check-in { 0% { transform: scale(.75); opacity: .2; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+.reminder-check { animation: reminder-check-in 240ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .reminder-check { animation: none; } }

@@ -54,7 +54,10 @@ function formatTimeAgo(date: Date, t: (key: string) => string): string {
 const reminderTypeConfig = {
   medicine: { icon: Pill, color: 'text-blue-600', bg: 'bg-blue-50' },
   hydration: { icon: Droplets, color: 'text-sky-600', bg: 'bg-sky-50' },
-  activity: { icon: Footprints, color: 'text-primary', bg: 'bg-primary/10' },
+  meal: { icon: Bell, color: 'text-primary', bg: 'bg-primary/10' },
+  walk: { icon: Footprints, color: 'text-primary', bg: 'bg-primary/10' },
+  family_call: { icon: Bell, color: 'text-primary', bg: 'bg-primary/10' },
+  daily_activity: { icon: Gamepad2, color: 'text-primary', bg: 'bg-primary/10' },
 }
 
 // =====================================================

@@ -1,78 +1,33 @@
-/**
- * Pattern & Attention — Question Bank
- *
- * Five pattern categories, each cognitively simple.
- * Difficulty selects which pool to draw from.
- */
-
 import type { DifficultyLevel } from '@/lib/games/adaptive-engine'
 import type { PatternQuestionConfig } from '@/features/games/types'
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    const temp = a[i]!
-    a[i] = a[j]!
-    a[j] = temp
-  }
-  return a
+const byDifficulty: Record<DifficultyLevel, PatternQuestionConfig[]> = {
+  1: [
+    { id: 'alt-1', type: 'alternating', prompt: 'What comes next?', sequence: ['●', '■', '●', '■'], answer: '●', options: ['●', '■', '▲'] },
+    { id: 'repeat-1', type: 'repetition', prompt: 'What comes next?', sequence: ['●', '▲', '■', '●', '▲'], answer: '■', options: ['●', '▲', '■'] },
+    { id: 'number-1', type: 'number', prompt: 'What comes next?', sequence: ['1', '2', '3', '4'], answer: '5', options: ['4', '5', '6'] },
+    { id: 'shape-1', type: 'shape', prompt: 'Which shape comes next?', sequence: ['○', '◐', '●'], answer: '○', options: ['○', '◐', '●'] },
+    { id: 'missing-1', type: 'missing', prompt: 'Which item is missing?', sequence: ['★', '?', '★', '☾'], missingIndex: 1, answer: '☾', options: ['★', '☾', '●'] },
+    { id: 'attention-1', type: 'attention', prompt: 'Find the different one.', sequence: [], answer: '◆', options: ['●', '●', '●', '◆', '●', '●'] },
+  ],
+  2: [
+    { id: 'alt-2', type: 'alternating', prompt: 'What comes next?', sequence: ['▲', '■', '▲', '■', '▲'], answer: '■', options: ['▲', '■', '●', '◆'] },
+    { id: 'repeat-2', type: 'repetition', prompt: 'What comes next?', sequence: ['●', '▲', '■', '●', '▲'], answer: '■', options: ['●', '▲', '■', '◆'] },
+    { id: 'number-2', type: 'number', prompt: 'What comes next?', sequence: ['2', '4', '6', '8'], answer: '10', options: ['9', '10', '12', '8'] },
+    { id: 'shape-2', type: 'shape', prompt: 'Which shape comes next?', sequence: ['○', '◐', '●', '○', '◐'], answer: '●', options: ['○', '◐', '●', '◇'] },
+    { id: 'missing-2', type: 'missing', prompt: 'Which item is missing?', sequence: ['■', '●', '?', '■', '●', '▲'], missingIndex: 2, answer: '▲', options: ['■', '●', '▲', '◆'] },
+    { id: 'attention-2', type: 'attention', prompt: 'Find the different one.', sequence: [], answer: '◐', options: ['○', '○', '○', '○', '◐', '○', '○', '○'] },
+  ],
+  3: [
+    { id: 'alt-3', type: 'alternating', prompt: 'What comes next?', sequence: ['◆', '●', '◆', '●', '◆', '●'], answer: '◆', options: ['◆', '●', '■', '▲'] },
+    { id: 'repeat-3', type: 'repetition', prompt: 'What comes next?', sequence: ['●', '▲', '■', '●', '▲', '■', '●'], answer: '▲', options: ['●', '▲', '■', '◆'] },
+    { id: 'number-3', type: 'number', prompt: 'What comes next?', sequence: ['1', '3', '5', '7'], answer: '9', options: ['8', '9', '10', '7'] },
+    { id: 'shape-3', type: 'shape', prompt: 'Which shape comes next?', sequence: ['○', '◐', '●', '◐', '○'], answer: '◐', options: ['○', '◐', '●', '◇'] },
+    { id: 'missing-3', type: 'missing', prompt: 'Which item is missing?', sequence: ['★', '☾', '●', '?', '☾', '●'], missingIndex: 3, answer: '★', options: ['★', '☾', '●', '◆'] },
+    { id: 'attention-3', type: 'attention', prompt: 'Find the different one.', sequence: [], answer: '■', options: ['●', '●', '●', '●', '●', '■', '●', '●'] },
+  ],
 }
 
-// ── Level 1: Simple alternating (A-B-A-B) ─────────────────────
-
-const L1: PatternQuestionConfig[] = [
-  { sequence: ['🔴', '🔵', '🔴', '🔵'],         answer: '🔴', options: ['🔴', '🔵', '🟢'] },
-  { sequence: ['⭐', '🌙', '⭐', '🌙'],         answer: '⭐', options: ['⭐', '🌙', '☀️'] },
-  { sequence: ['🟩', '🟪', '🟩', '🟪'],         answer: '🟩', options: ['🟩', '🟪', '🟧'] },
-  { sequence: ['🌸', '🌺', '🌸', '🌺'],         answer: '🌸', options: ['🌸', '🌺', '🌻'] },
-  { sequence: ['🔺', '🔻', '🔺', '🔻'],         answer: '🔺', options: ['🔺', '🔻', '⬛'] },
-  { sequence: ['🍎', '📖', '🍎', '📖'],         answer: '🍎', options: ['🍎', '📖', '☕'] },
-  { sequence: ['🟥', '🟧', '🟥', '🟧'],         answer: '🟥', options: ['🟥', '🟧', '🟨'] },
-  { sequence: ['🔵', '🟢', '🔵', '🟢'],         answer: '🔵', options: ['🔵', '🟢', '🔴'] },
-]
-
-// ── Level 2: Three-item repeat (A-B-C-A-B) ────────────────────
-
-const L2: PatternQuestionConfig[] = [
-  { sequence: ['🔴', '🔵', '🟢', '🔴', '🔵'],   answer: '🟢', options: ['🔴', '🔵', '🟢'] },
-  { sequence: ['⭐', '🌙', '☀️', '⭐', '🌙'],   answer: '☀️', options: ['⭐', '🌙', '☀️'] },
-  { sequence: ['🟥', '🟧', '🟨', '🟥', '🟧'],   answer: '🟨', options: ['🟥', '🟧', '🟨'] },
-  { sequence: ['🌸', '🌺', '🌻', '🌸', '🌺'],   answer: '🌻', options: ['🌸', '🌺', '🌻'] },
-  { sequence: ['🔺', '🔻', '⬛', '🔺', '🔻'],   answer: '⬛', options: ['🔺', '🔻', '⬛'] },
-  { sequence: ['🍎', '📖', '☕', '🍎', '📖'],   answer: '☕', options: ['🍎', '📖', '☕'] },
-  { sequence: ['🟩', '🟪', '🟧', '🟩', '🟪'],   answer: '🟧', options: ['🟩', '🟪', '🟧'] },
-  { sequence: ['🔵', '🟢', '🟡', '🔵', '🟢'],   answer: '🟡', options: ['🔵', '🟢', '🟡'] },
-]
-
-// ── Level 3: Longer or mixed ───────────────────────────────────
-
-const L3: PatternQuestionConfig[] = [
-  { sequence: ['🔴', '🔵', '🟢', '🟡', '🔴', '🔵'],   answer: '🟢', options: ['🔴', '🔵', '🟢'] },
-  { sequence: ['⭐', '🌙', '☀️', '🌈', '⭐', '🌙'],   answer: '☀️', options: ['⭐', '🌙', '☀️'] },
-  { sequence: ['🟥', '🟧', '🟨', '🟩', '🟥', '🟧'],   answer: '🟨', options: ['🟥', '🟧', '🟨'] },
-  { sequence: ['🌸', '🌺', '🌻', '🌹', '🌸', '🌺'],   answer: '🌻', options: ['🌸', '🌺', '🌻'] },
-  { sequence: ['🔺', '🔻', '⬛', '⬜', '🔺', '🔻'],   answer: '⬛', options: ['🔺', '🔻', '⬛'] },
-  { sequence: ['🍎', '📖', '☕', '🔑', '🍎', '📖'],   answer: '☕', options: ['🍎', '📖', '☕'] },
-  { sequence: ['🟩', '🟪', '🟧', '🟥', '🟩', '🟪'],   answer: '🟧', options: ['🟩', '🟪', '🟧'] },
-  { sequence: ['🔵', '🟢', '🟡', '🔴', '🔵', '🟢'],   answer: '🟡', options: ['🔵', '🟢', '🟡'] },
-]
-
-const POOL: Record<DifficultyLevel, PatternQuestionConfig[]> = { 1: L1, 2: L2, 3: L3 }
-
-/**
- * Return `count` shuffled questions for the given difficulty.
- * If the pool is smaller than `count`, questions may repeat.
- */
-export function getPatternQuestions(
-  difficulty: DifficultyLevel,
-  count: number = 5,
-): PatternQuestionConfig[] {
-  const pool = POOL[difficulty]
-  const shuffled = shuffle(pool)
-  const result: PatternQuestionConfig[] = []
-  for (let i = 0; i < count; i++) {
-    result.push(shuffled[i % shuffled.length]!)
-  }
-  return result
+export function getPatternQuestions(difficulty: DifficultyLevel): PatternQuestionConfig[] {
+  return byDifficulty[difficulty].map((question) => ({ ...question, sequence: [...question.sequence], options: [...question.options] }))
 }

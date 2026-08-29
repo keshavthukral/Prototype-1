@@ -1,292 +1,37 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useLanguage } from '@/lib/i18n/language-context'
-import { useAuth } from '@/lib/supabase/auth-context'
-import { isSupabaseConfigured, supabase } from '@/lib/supabase/client'
-import { reminderRepository } from '@/lib/repositories/reminder'
-import type { LocalReminder } from '@/lib/db/database'
-import { PatientBottomNav } from '@/components/patient/bottom-nav'
-import { ArrowLeft, Pill, Droplets, Footprints, Check, Clock, Bell, Timer, WifiOff } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { Apple, ArrowLeft, Check, Clock3, Droplets, Footprints, Gamepad2, Phone, Pill, Timer, WifiOff } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { PatientBottomNav } from '@/components/patient/bottom-nav'
+import { useAuth } from '@/lib/supabase/auth-context'
+import { isSupabaseConfigured } from '@/lib/supabase/client'
+import { db, type LocalReminder } from '@/lib/db/database'
+import { reminderRepository } from '@/lib/repositories/reminder'
 
-type ReminderStatus = 'pending' | 'done' | 'later'
-
-const typeConfig: Record<string, { icon: typeof Pill; labelKey: string }> = {
-  medicine: { icon: Pill, labelKey: 'medicine' },
-  hydration: { icon: Droplets, labelKey: 'hydration' },
-  activity: { icon: Footprints, labelKey: 'activity_type' },
-}
-
-function getConfig(reminderType: string): { icon: typeof Pill; labelKey: string } {
-  const fallback = typeConfig.activity
-  if (!fallback) {
-    return { icon: Footprints, labelKey: 'activity_type' }
-  }
-  return typeConfig[reminderType] ?? fallback
-}
-
-interface SupabaseReminderRow {
-  id: string
-  patient_id: string
-  created_by: string | null
-  title: string
-  description: string | null
-  reminder_type: 'medicine' | 'hydration' | 'activity'
-  scheduled_time: string | null
-  frequency: 'daily' | 'weekly' | 'as_needed'
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
+const icons = { medicine: Pill, hydration: Droplets, meal: Apple, walk: Footprints, family_call: Phone, daily_activity: Gamepad2 }
+const labels = { medicine: 'Medicine', hydration: 'Hydration', meal: 'Meal', walk: 'Walk', family_call: 'Family Call', daily_activity: 'Daily Activity' }
+const timeLabel = (value?: string) => value ? new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(2000, 0, 1, Number(value.split(':')[0]), Number(value.split(':')[1]))) : ''
 
 export function RemindersPage() {
-  const navigate = useNavigate()
-  const { t } = useLanguage()
-  const { user } = useAuth()
-  const [reminders, setReminders] = useState<LocalReminder[]>([])
-  const [statuses, setStatuses] = useState<Record<string, ReminderStatus>>({})
-  const [loading, setLoading] = useState(true)
-  const [isOfflineCache, setIsOfflineCache] = useState(false)
+  const { user } = useAuth(); const [now, setNow] = useState(Date.now()); const [snoozeId, setSnoozeId] = useState<string | null>(null); const [optimistic, setOptimistic] = useState<Set<string>>(new Set())
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30_000); return () => window.clearInterval(timer) }, [])
+  const allReminders = useLiveQuery(() => user ? db.reminders.where('patientId').equals(user.id).and((item) => item.isActive).sortBy('scheduledTime') : [], [user?.id]) ?? []
+  const allCompletions = useLiveQuery(() => user ? db.reminderCompletions.where('patientId').equals(user.id).toArray() : [], [user?.id]) ?? []
+  const start = new Date(); start.setHours(0,0,0,0)
+  const todayCompleted = allCompletions.filter((item) => item.completedAt >= start && (item.status === 'taken' || item.status === 'done'))
+  const completedIds = useMemo(() => new Set([...todayCompleted.map((item) => item.reminderId), ...optimistic]), [todayCompleted, optimistic])
+  const previouslyCompletedIds = useMemo(() => new Set(allCompletions.filter((item) => item.status === 'taken' || item.status === 'done').map((item) => item.reminderId)), [allCompletions])
+  const reminders = allReminders.filter((item) => item.frequency === 'daily' || (item.frequency === 'specific_days' && item.specificDays?.includes(new Date(now).getDay())) || (item.frequency === 'once' && (!previouslyCompletedIds.has(item.id) || completedIds.has(item.id))))
+  const pending = reminders.filter((item) => !completedIds.has(item.id)); const completed = reminders.filter((item) => completedIds.has(item.id))
 
-  const loadReminders = useCallback(async () => {
-    if (!user) {
-      setLoading(false)
-      return
-    }
+  const complete = async (reminder: LocalReminder) => { setOptimistic((items) => new Set(items).add(reminder.id)); setSnoozeId(null); try { await reminderRepository.complete(reminder, reminder.reminderType === 'medicine' ? 'taken' : 'done'); toast.success('Reminder completed') } catch { setOptimistic((items) => { const next = new Set(items); next.delete(reminder.id); return next }); toast.error('Could not save. Please try again.') } }
+  const snooze = async (reminder: LocalReminder, minutes: number) => { setSnoozeId(null); try { const until = await reminderRepository.snooze(reminder, minutes); setNow(Date.now()); toast.success(`Reminder paused until ${new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(until)}`) } catch { toast.error('Could not save. Please try again.') } }
 
-    const patientId = user.id
-    const localReminders = await reminderRepository.getByPatientId(patientId)
+  return <div className="patient-ui min-h-screen bg-background"><main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 pb-28 pt-7 sm:px-8"><Button asChild variant="ghost" className="w-fit px-3"><Link to="/patient"><ArrowLeft data-icon="inline-start" />Back</Link></Button><header><h1 className="text-[2.25rem] font-bold tracking-[-0.02em] text-foreground sm:text-[2.5rem]">My Reminders</h1><p className="mt-2 text-xl text-muted-foreground">Your caregiver prepared these reminders.</p>{(!navigator.onLine || !isSupabaseConfigured()) && <p className="mt-3 flex items-center gap-2 text-base font-medium text-muted-foreground"><WifiOff className="size-5" />Works offline</p>}</header><ReminderSection title="Today" empty="No reminders waiting right now." reminders={pending} now={now} snoozeId={snoozeId} onComplete={complete} onSnoozeOpen={setSnoozeId} onSnooze={snooze} /><ReminderSection title="Completed" empty="Completed reminders will appear here." reminders={completed} now={now} completed snoozeId={snoozeId} onComplete={complete} onSnoozeOpen={setSnoozeId} onSnooze={snooze} /></main><PatientBottomNav /></div>
+}
 
-    if (localReminders.length > 0) {
-      setReminders(localReminders)
-      setIsOfflineCache(!isSupabaseConfigured() || !navigator.onLine)
-      setLoading(false)
-      return
-    }
-
-    if (isSupabaseConfigured() && navigator.onLine) {
-      try {
-        const { data } = await supabase
-          .from('reminders')
-          .select('*')
-          .eq('is_active', true)
-          .order('scheduled_time')
-
-        if (data && data.length > 0) {
-          const typedData = data as unknown as SupabaseReminderRow[]
-          for (const remote of typedData) {
-            await reminderRepository.create({
-              id: remote.id,
-              patientId: remote.patient_id,
-              createdBy: remote.created_by ?? undefined,
-              title: remote.title,
-              description: remote.description ?? undefined,
-              reminderType: remote.reminder_type,
-              scheduledTime: remote.scheduled_time ?? undefined,
-              frequency: remote.frequency,
-              isActive: remote.is_active,
-            })
-          }
-
-          const cachedReminders = await reminderRepository.getByPatientId(patientId)
-          setReminders(cachedReminders)
-        }
-      } catch (err) {
-        console.error('Failed to fetch reminders from Supabase:', err)
-      }
-    }
-
-    setLoading(false)
-  }, [user])
-
-  useEffect(() => {
-    loadReminders()
-  }, [loadReminders])
-
-  const markDone = useCallback(async (reminder: LocalReminder) => {
-    setStatuses((prev) => ({ ...prev, [reminder.id]: 'done' }))
-
-    await reminderRepository.addCompletion({
-      id: crypto.randomUUID(),
-      reminderId: reminder.id,
-      patientId: reminder.patientId,
-      status: 'done',
-      completedAt: new Date(),
-    })
-
-    if (!navigator.onLine || !isSupabaseConfigured()) {
-      toast.info('Saved on this device', { duration: 2500 })
-    } else {
-      try {
-        await supabase.from('reminder_completions').insert({
-          reminder_id: reminder.id,
-          patient_id: reminder.patientId,
-          status: 'done',
-        } as never)
-      } catch {
-        // Already queued
-      }
-    }
-  }, [])
-
-  const markTaken = useCallback(async (reminder: LocalReminder) => {
-    setStatuses((prev) => ({ ...prev, [reminder.id]: 'done' }))
-
-    await reminderRepository.addCompletion({
-      id: crypto.randomUUID(),
-      reminderId: reminder.id,
-      patientId: reminder.patientId,
-      status: 'taken',
-      completedAt: new Date(),
-    })
-
-    if (!navigator.onLine || !isSupabaseConfigured()) {
-      toast.info('Saved on this device', { duration: 2500 })
-    } else {
-      try {
-        await supabase.from('reminder_completions').insert({
-          reminder_id: reminder.id,
-          patient_id: reminder.patientId,
-          status: 'taken',
-        } as never)
-      } catch {
-        // Already queued
-      }
-    }
-  }, [])
-
-  const markLater = useCallback((reminderId: string) => {
-    setStatuses((prev) => ({ ...prev, [reminderId]: 'later' }))
-    toast.info(t('remind_later'))
-  }, [t])
-
-  return (
-    <div className="patient-ui flex min-h-screen flex-col bg-background">
-      <main className="flex flex-1 flex-col px-6 pt-8 pb-24">
-        <button
-          onClick={() => navigate('/patient')}
-          className="mb-6 flex h-12 w-fit items-center gap-2 rounded-lg px-2 text-base text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
-          {t('back')}
-        </button>
-
-        <header className="mb-8">
-          <h1 className="mb-1 text-[2.25rem] font-bold text-foreground sm:text-[2.5rem]">
-            {t('my_reminders')}
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            {t('reminders_instruction')}
-          </p>
-          {isOfflineCache && (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-              <WifiOff className="h-4 w-4" />
-              {t('offline_cached')}
-            </p>
-          )}
-        </header>
-
-        {loading ? (
-          <div className="flex flex-1 items-center justify-center">
-            <p className="text-lg text-muted-foreground">{t('loading')}</p>
-          </div>
-        ) : reminders.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <Bell className="mb-4 h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
-            <p className="text-lg text-muted-foreground">{t('no_reminders')}</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {reminders.map((reminder) => {
-              const status = statuses[reminder.id] ?? 'pending'
-              const config = getConfig(reminder.reminderType)
-              const Icon = config.icon
-
-              return (
-                <article
-                  key={reminder.id}
-                  className={`rounded-xl border border-border bg-card p-5 transition-opacity ${
-                    status !== 'pending' ? 'opacity-50' : ''
-                  }`}
-                  aria-label={reminder.title}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Type icon */}
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-foreground">{reminder.title}</h3>
-                      <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <span className="font-medium">{t(config.labelKey)}</span>
-                        </span>
-                        {reminder.scheduledTime && (
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="h-4 w-4" aria-hidden="true" />
-                            {reminder.scheduledTime}
-                          </span>
-                        )}
-                        {!reminder.synced && (
-                          <span className="inline-flex items-center gap-1 text-xs text-amber-500">
-                            <WifiOff className="h-3.5 w-3.5" />
-                            {t('queued_for_sync')}
-                          </span>
-                        )}
-                      </div>
-                      {reminder.description && (
-                        <p className="mt-1 text-sm text-muted-foreground">{reminder.description}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="mt-4 flex gap-3">
-                    {status === 'pending' ? (
-                      <>
-                        {reminder.reminderType === 'medicine' ? (
-                          <button
-                            onClick={() => markTaken(reminder)}
-                            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                          >
-                            <Check className="h-4 w-4" aria-hidden="true" />
-                            {t('taken')}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => markDone(reminder)}
-                            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                          >
-                            <Check className="h-4 w-4" aria-hidden="true" />
-                            {t('done')}
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => markLater(reminder.id)}
-                          className="flex h-12 items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                        >
-                          <Timer className="h-4 w-4" aria-hidden="true" />
-                          {t('remind_later')}
-                        </button>
-                      </>
-                    ) : (
-                      <div className="flex h-12 items-center gap-2 text-sm font-medium text-success">
-                        <Check className="h-5 w-5" aria-hidden="true" />
-                        <span>{status === 'done' ? t('done') : t('remind_later')}</span>
-                      </div>
-                    )}
-                  </div>
-                </article>
-              )
-            })}
-          </div>
-        )}
-      </main>
-
-      <PatientBottomNav />
-    </div>
-  )
+function ReminderSection({ title, empty, reminders, now, completed, snoozeId, onComplete, onSnoozeOpen, onSnooze }: { title: string; empty: string; reminders: LocalReminder[]; now: number; completed?: boolean; snoozeId: string | null; onComplete: (item: LocalReminder) => void; onSnoozeOpen: (id: string | null) => void; onSnooze: (item: LocalReminder, minutes: number) => void }) {
+  return <section aria-labelledby={`${title}-heading`} className="flex flex-col gap-4"><h2 id={`${title}-heading`} className="text-2xl font-bold text-foreground">{title}</h2>{reminders.length === 0 ? <p className="rounded-xl bg-secondary p-5 text-lg text-muted-foreground">{empty}</p> : reminders.map((item) => { const Icon = icons[item.reminderType]; const snoozed = Boolean(item.snoozedUntil && new Date(item.snoozedUntil).getTime() > now); return <article key={item.id} className={`rounded-xl border border-border bg-card p-5 ${completed ? 'opacity-75' : ''}`}><div className="flex items-center gap-4"><div className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{completed ? <Check className="reminder-check size-8" /> : <Icon className="size-8" />}</div><div className="min-w-0 flex-1"><p className="flex items-center gap-2 text-lg font-semibold text-primary"><Clock3 className="size-5" />{timeLabel(item.scheduledTime)}</p><h3 className="mt-1 text-2xl font-bold text-foreground">{item.title}</h3><p className="mt-1 text-base text-muted-foreground">{labels[item.reminderType]}</p></div></div>{snoozed ? <p role="status" className="mt-5 flex min-h-14 items-center gap-3 rounded-xl bg-secondary px-5 text-lg font-semibold text-foreground"><Timer className="size-6 text-primary" />Remind again at {new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(item.snoozedUntil!))}</p> : !completed && <><div className="mt-5 flex flex-col gap-3 sm:flex-row"><Button size="lg" className="flex-1 text-lg" onClick={() => onComplete(item)}><Check data-icon="inline-start" />{item.reminderType === 'medicine' ? 'Taken' : 'Done'}</Button><Button size="lg" variant="outline" className="flex-1 text-lg" onClick={() => onSnoozeOpen(snoozeId === item.id ? null : item.id)}><Timer data-icon="inline-start" />Remind Me Later</Button></div>{snoozeId === item.id && <div className="mt-3 rounded-xl border border-border bg-secondary p-4"><p className="mb-3 text-lg font-semibold text-foreground">Remind me in:</p><div className="grid grid-cols-3 gap-2">{([10,30,60] as const).map((minutes) => <Button key={minutes} variant="outline" onClick={() => onSnooze(item, minutes)}>{minutes === 60 ? '1 hour' : `${minutes} min`}</Button>)}</div></div>}</>}</article> })}</section>
 }

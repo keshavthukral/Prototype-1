@@ -20,6 +20,7 @@ import {
   RefreshCw,
   AlertCircle,
   Plus,
+  PhoneCall,
 } from 'lucide-react'
 import {
   LineChart,
@@ -53,7 +54,10 @@ function formatTimeAgo(date: Date, t: (key: string) => string): string {
 const reminderTypeConfig = {
   medicine: { icon: Pill, color: 'text-blue-600', bg: 'bg-blue-50' },
   hydration: { icon: Droplets, color: 'text-sky-600', bg: 'bg-sky-50' },
-  activity: { icon: Footprints, color: 'text-primary', bg: 'bg-primary/10' },
+  meal: { icon: Bell, color: 'text-primary', bg: 'bg-primary/10' },
+  walk: { icon: Footprints, color: 'text-primary', bg: 'bg-primary/10' },
+  family_call: { icon: Bell, color: 'text-primary', bg: 'bg-primary/10' },
+  daily_activity: { icon: Gamepad2, color: 'text-primary', bg: 'bg-primary/10' },
 }
 
 const activityIcon: Record<string, typeof Gamepad2> = {
@@ -468,6 +472,22 @@ export function CaregiverDashboardPage() {
 
           {/* Right column: Reminders + Quick actions */}
           <div className="space-y-6">
+            {data.supportRequests.filter((request) => request.status === 'pending').map((request) => (
+              <Card key={request.id} className="rounded-xl border-primary/40">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary"><PhoneCall aria-hidden="true" /></div>
+                    <div><CardTitle className="text-sm font-semibold">Contact requested</CardTitle><p className="mt-0.5 text-xs font-medium text-primary">High-priority support</p></div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-base font-semibold text-foreground">{data.patient?.name ?? 'Anita'} requested contact.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{request.requestedAt.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                  <p className="mt-3 text-xs leading-relaxed text-muted-foreground">This is a support request. It is not automatically classified as a medical emergency.</p>
+                </CardContent>
+              </Card>
+            ))}
+
             {/* Today's reminders */}
             <Card className="rounded-xl">
               <CardHeader className="pb-2">
@@ -554,7 +574,7 @@ export function CaregiverDashboardPage() {
                 <div className="space-y-2">
                   <button
                     onClick={() => navigate('/caregiver/reminders/new')}
-                    className="flex w-full items-center justify-between rounded-lg border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-muted"
+                    className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <span className="flex items-center gap-2.5">
                       <Bell className="h-4 w-4 text-muted-foreground" />
@@ -564,7 +584,7 @@ export function CaregiverDashboardPage() {
                   </button>
                   <button
                     onClick={() => navigate('/caregiver/memories/new')}
-                    className="flex w-full items-center justify-between rounded-lg border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-muted"
+                    className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <span className="flex items-center gap-2.5">
                       <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -574,7 +594,7 @@ export function CaregiverDashboardPage() {
                   </button>
                   <button
                     onClick={() => navigate('/caregiver/patient')}
-                    className="flex w-full items-center justify-between rounded-lg border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-muted"
+                    className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <span className="flex items-center gap-2.5">
                       <Gamepad2 className="h-4 w-4 text-muted-foreground" />

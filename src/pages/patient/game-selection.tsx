@@ -30,7 +30,7 @@ export function GameSelectionPage() {
         <div className="space-y-5">
           <button
             onClick={() => navigate('/patient/game/memory')}
-            className="flex w-full items-center gap-5 rounded-2xl border border-border bg-card p-6 text-left shadow-sm transition-colors hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="flex w-full cursor-pointer items-center gap-5 rounded-2xl border border-border bg-card p-6 text-left shadow-sm transition-colors duration-150 hover:border-primary/40 hover:bg-accent/50 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <Brain className="h-8 w-8 text-primary" />
@@ -47,7 +47,7 @@ export function GameSelectionPage() {
 
           <button
             onClick={() => navigate('/patient/game/pattern')}
-            className="flex w-full items-center gap-5 rounded-2xl border border-border bg-card p-6 text-left shadow-sm transition-colors hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="flex w-full cursor-pointer items-center gap-5 rounded-2xl border border-border bg-card p-6 text-left shadow-sm transition-colors duration-150 hover:border-primary/40 hover:bg-accent/50 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <Grid3X3 className="h-8 w-8 text-primary" />

@@ -297,7 +297,7 @@ export function MemoryForm() {
                     <button
                       type="button"
                       onClick={removePhoto}
-                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition-colors hover:bg-destructive/90"
+                      className="absolute -right-2 -top-2 flex size-8 cursor-pointer items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition-colors duration-150 hover:bg-destructive/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                       aria-label={t('photo_remove')}
                     >
                       <X className="h-3 w-3" />
@@ -307,7 +307,7 @@ export function MemoryForm() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex h-28 w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-muted/30 text-muted-foreground transition-colors hover:border-primary/30 hover:bg-muted/50"
+                    className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-muted/30 text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-muted/50 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
                     disabled={!isOnline}
                   >
                     {isOnline ? (

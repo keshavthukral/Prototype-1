@@ -31,7 +31,7 @@ export function PatientBottomNav() {
               key={path}
               onClick={() => navigate(path)}
               className={cn(
-                'flex flex-1 flex-col items-center gap-1 py-3 px-2',
+                'flex flex-1 cursor-pointer flex-col items-center gap-1 py-3 px-2 active:scale-[0.98]',
                 'min-h-[64px] justify-center',
                 'transition-colors duration-150',
                 'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',

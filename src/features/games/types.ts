@@ -15,11 +15,15 @@ export interface MemoryRoundConfig {
 }
 
 export interface PatternQuestionConfig {
+  id: string
+  type: 'alternating' | 'repetition' | 'number' | 'shape' | 'missing' | 'attention'
+  prompt: string
   sequence: string[]
   answer: string
   options: string[]
+  missingIndex?: number
 }
 
 export function targetsCountForDifficulty(d: DifficultyLevel): number {
-  return d === 1 ? 3 : d === 2 ? 4 : 5
+  return d === 1 ? 3 : d === 2 ? 4 : 6
 }

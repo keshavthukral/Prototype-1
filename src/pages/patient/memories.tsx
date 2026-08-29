@@ -7,7 +7,8 @@ import { memoryRepository } from '@/lib/repositories/memory'
 import type { LocalMemory } from '@/lib/db/database'
 import { PatientBottomNav } from '@/components/patient/bottom-nav'
 import { HearAgain } from '@/components/patient/hear-again'
-import { ArrowLeft, User, BookOpen, WifiOff, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, User, BookOpen, WifiOff, ChevronLeft, ChevronRight, LayoutGrid } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface SupabaseMemoryRow {
   id: string
@@ -30,6 +31,7 @@ export function MemoriesPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isOfflineCache, setIsOfflineCache] = useState(false)
+  const [viewAll, setViewAll] = useState(false)
 
   const loadMemories = useCallback(async () => {
     if (!user) {
@@ -132,7 +134,7 @@ export function MemoriesPage() {
       <main className="flex flex-1 flex-col px-6 pt-8 pb-24">
         <button
           onClick={() => navigate('/patient')}
-          className="mb-6 flex h-12 w-fit items-center gap-2 rounded-lg px-2 text-base text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="mb-6 flex h-12 w-fit cursor-pointer items-center gap-2 rounded-lg px-2 text-base text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           {t('back')}
@@ -162,6 +164,21 @@ export function MemoriesPage() {
             <BookOpen className="mb-4 h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
             <p className="text-lg text-muted-foreground">{t('no_memories')}</p>
           </div>
+        ) : viewAll ? (
+          <section aria-labelledby="all-memories-heading" className="flex flex-col gap-5">
+            <div className="flex items-center justify-between gap-4">
+              <h2 id="all-memories-heading" className="text-2xl font-bold text-foreground">All Memories</h2>
+              <Button variant="outline" onClick={() => setViewAll(false)}>Show One</Button>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {memories.map((memory, index) => (
+                <button key={memory.id} onClick={() => { setCurrentIndex(index); setViewAll(false) }} className="cursor-pointer overflow-hidden rounded-xl border border-border bg-card text-left transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+                  {memory.imageUrl && <img src={memory.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />}
+                  <span className="block p-5"><span className="block text-xl font-bold text-foreground">{memory.name}</span><span className="mt-1 block text-base text-primary">{memory.relationship}</span></span>
+                </button>
+              ))}
+            </div>
+          </section>
         ) : current ? (
           <div
             className="flex flex-1 flex-col items-center"
@@ -211,7 +228,7 @@ export function MemoriesPage() {
             {/* Read aloud */}
             <HearAgain
               text={readAloudText}
-              label={t('read_aloud')}
+              label="Hear Again"
               className="mb-8"
             />
 
@@ -220,7 +237,7 @@ export function MemoriesPage() {
               <div className="flex w-full max-w-sm gap-4">
                 <button
                   onClick={goToPrev}
-                  className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border-2 border-border bg-card text-base font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-border bg-card text-base font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   aria-label={t('prev_memory')}
                 >
                   <ChevronLeft className="h-5 w-5" aria-hidden="true" />
@@ -228,7 +245,7 @@ export function MemoriesPage() {
                 </button>
                 <button
                   onClick={goToNext}
-                  className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border-2 border-border bg-card text-base font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-border bg-card text-base font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   aria-label={t('next_memory')}
                 >
                   {t('next_memory')}
@@ -237,6 +254,8 @@ export function MemoriesPage() {
               </div>
             )}
 
+            <Button variant="outline" size="lg" className="mt-6 text-lg" onClick={() => setViewAll(true)}><LayoutGrid data-icon="inline-start" />View All Memories</Button>
+
             {/* Dot indicators for multiple memories */}
             {hasMultiple && (
               <div className="mt-6 flex gap-2" aria-hidden="true">
@@ -244,13 +263,14 @@ export function MemoriesPage() {
                   <button
                     key={_mem.id}
                     onClick={() => setCurrentIndex(idx)}
-                    className={`h-2.5 rounded-full transition-all ${
+                    aria-pressed={idx === currentIndex}
+                    className={`min-h-12 min-w-12 cursor-pointer rounded-lg border transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                       idx === currentIndex
-                        ? 'w-8 bg-primary'
-                        : 'w-2.5 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-transparent bg-secondary text-secondary-foreground hover:border-primary/30 hover:bg-accent'
                     }`}
                     aria-label={`Memory ${idx + 1}`}
-                  />
+                  >{idx + 1}</button>
                 ))}
               </div>
             )}

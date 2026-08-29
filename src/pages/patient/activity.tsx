@@ -275,7 +275,7 @@ export function ActivityPage() {
             <HearAgain text={t('memory_game_instruction')} label={t('voice_instruction')} className="mb-6" />
             <button
               onClick={startMemory}
-              className="h-20 w-full max-w-sm rounded-2xl bg-primary px-8 text-xl font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+              className="h-20 w-full max-w-sm cursor-pointer rounded-2xl bg-primary px-8 text-xl font-semibold text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
             >
               {t('start_game')}
             </button>
@@ -334,7 +334,7 @@ export function ActivityPage() {
                   <button
                     key={obj.id}
                     onClick={() => toggleMemObject(obj.id)}
-                    className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-5 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                    className={`relative flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 p-5 transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                       sel ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/30'
                     }`}
                     aria-pressed={sel}
@@ -353,14 +353,14 @@ export function ActivityPage() {
               <button
                 onClick={useMemoryHint}
                 disabled={memShowHint}
-                className="h-12 w-full rounded-xl border border-border bg-card text-sm font-medium text-muted-foreground transition-all hover:bg-accent disabled:opacity-50"
+                className="h-12 w-full cursor-pointer rounded-xl border border-border bg-card text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
               >
                 {t('use_hint')} ({memHintsUsed})
               </button>
               <button
                 onClick={submitMemoryRecall}
                 disabled={memSelected.length === 0}
-                className="h-16 w-full rounded-2xl bg-primary text-lg font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="h-16 w-full cursor-pointer rounded-2xl bg-primary text-lg font-semibold text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {t('done')}
               </button>
@@ -391,7 +391,7 @@ export function ActivityPage() {
             />
             <button
               onClick={startPattern}
-              className="h-16 w-full max-w-sm rounded-2xl bg-primary px-8 text-lg font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+              className="h-16 w-full max-w-sm cursor-pointer rounded-2xl bg-primary px-8 text-lg font-semibold text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
             >
               {t('activity_pattern_title')}
             </button>
@@ -407,7 +407,7 @@ export function ActivityPage() {
             <HearAgain text={t('pattern_instruction')} label={t('voice_instruction')} className="mb-6" />
             <button
               onClick={startPattern}
-              className="h-20 w-full max-w-sm rounded-2xl bg-primary px-8 text-xl font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+              className="h-20 w-full max-w-sm cursor-pointer rounded-2xl bg-primary px-8 text-xl font-semibold text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
             >
               {t('start_game')}
             </button>
@@ -424,7 +424,7 @@ export function ActivityPage() {
               </div>
             </div>
             <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-border">
-              <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${(patRound / patRounds.length) * 100}%` }} />
+              <div className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${(patRound / patRounds.length) * 100}%` }} />
             </div>
 
             <h2 className="mb-6 text-center text-[1.5rem] font-bold text-foreground">{t('what_comes_next')}</h2>
@@ -453,7 +453,8 @@ export function ActivityPage() {
                     key={opt}
                     onClick={() => handlePatternAnswer(opt)}
                     disabled={patAnswer !== null}
-                    className={`flex h-20 items-center justify-center rounded-2xl border-2 text-4xl transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                    aria-pressed={isSel}
+                    className={`relative flex h-20 cursor-pointer items-center justify-center rounded-2xl border-2 text-4xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:active:scale-100 ${
                       showOk ? 'border-success bg-success/10' :
                       showBad ? 'border-destructive bg-destructive/10' :
                       isSel ? 'border-primary bg-primary/10' :
@@ -462,7 +463,7 @@ export function ActivityPage() {
                     aria-label={`Option: ${opt}`}
                   >
                     {opt}
-                    {showOk && <Check className="absolute h-6 w-6 text-success" />}
+                    {(isSel || showOk) && <Check className={`absolute right-3 top-3 h-6 w-6 ${showOk ? 'text-success' : 'text-primary'}`} aria-label={showOk ? 'Correct answer' : 'Selected'} />}
                   </button>
                 )
               })}
@@ -472,7 +473,7 @@ export function ActivityPage() {
               <button
                 onClick={usePatternHint}
                 disabled={patShowHint}
-                className="h-12 w-full rounded-xl border border-border bg-card text-sm font-medium text-muted-foreground transition-all hover:bg-accent disabled:opacity-50"
+                className="h-12 w-full cursor-pointer rounded-xl border border-border bg-card text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
               >
                 {t('use_hint')} ({patHintsUsed})
               </button>
@@ -501,7 +502,7 @@ export function ActivityPage() {
             />
             <button
               onClick={() => setPhase('all-done')}
-              className="h-16 w-full max-w-sm rounded-2xl bg-primary px-8 text-lg font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+              className="h-16 w-full max-w-sm cursor-pointer rounded-2xl bg-primary px-8 text-lg font-semibold text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
             >
               {t('activity_all_done')}
             </button>
@@ -527,14 +528,14 @@ export function ActivityPage() {
                   setMemObjects([])
                   setPatRounds([])
                 }}
-                className="h-16 rounded-2xl bg-primary px-8 text-lg font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                className="h-16 cursor-pointer rounded-2xl bg-primary px-8 text-lg font-semibold text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
               >
                 <RotateCcw className="mr-2 inline h-5 w-5" />
                 {t('play_again')}
               </button>
               <button
                 onClick={goHome}
-                className="h-14 rounded-2xl border-2 border-border bg-card px-8 text-lg font-semibold text-foreground shadow-sm transition-all hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                className="h-14 cursor-pointer rounded-2xl border-2 border-border bg-card px-8 text-lg font-semibold text-foreground shadow-sm transition-colors duration-150 hover:border-primary/30 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
               >
                 {t('activity_go_home')}
               </button>

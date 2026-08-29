@@ -79,7 +79,7 @@ export function MemoryGamePage() {
         {phase === 'ready' && (
           <Button
             variant="ghost"
-            onClick={() => navigate('/patient/game')}
+            onClick={() => navigate('/patient/games')}
             className="mb-8 h-14 w-fit self-start text-base"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
@@ -158,7 +158,8 @@ export function MemoryGamePage() {
                   <button
                     key={obj.id}
                     onClick={() => toggleObject(obj.id)}
-                    className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-5 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                    aria-pressed={isSelected}
+                    className={`relative flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 p-5 transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                       isSelected
                         ? 'border-primary bg-primary/10 shadow-sm'
                         : 'border-border bg-card hover:border-primary/30'

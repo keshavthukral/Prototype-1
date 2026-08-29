@@ -78,7 +78,7 @@ export interface AdaptiveOutput {
 }
 
 // Reminder Types
-export type ReminderType = 'medicine' | 'hydration' | 'activity'
+export type ReminderType = 'medicine' | 'hydration' | 'meal' | 'walk' | 'family_call' | 'daily_activity'
 export type ReminderStatus = 'taken' | 'done' | 'skipped' | 'remind_later'
 
 export interface Reminder {
