@@ -5,10 +5,12 @@
  */
 
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Brain, Grid3X3 } from 'lucide-react'
+import { ArrowLeft, Brain, Shapes } from 'lucide-react'
+import { useLanguage } from '@/lib/i18n/language-context'
 
 export function GameSelection() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   return (
     <div className="patient-ui flex min-h-screen flex-col bg-background">
@@ -20,11 +22,11 @@ export function GameSelection() {
           className="mb-8 flex h-12 w-fit cursor-pointer items-center gap-2 rounded-lg px-2 text-base text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <ArrowLeft className="h-5 w-5" />
-          Home
+          {t('home')}
         </button>
 
         <h1 className="mb-8 text-[2.25rem] font-bold text-foreground sm:text-[2.5rem]">
-          Activities
+          {t('activities')}
         </h1>
 
         {/* Simple list of activities */}
@@ -37,8 +39,8 @@ export function GameSelection() {
               <Brain className="h-7 w-7 text-primary" />
             </div>
             <div className="flex-1 text-left">
-              <h2 className="text-lg font-semibold text-foreground">Memory Recall</h2>
-              <p className="text-sm text-muted-foreground">Remember familiar objects</p>
+              <h2 className="text-lg font-semibold text-foreground">{t('memory_recall')}</h2>
+              <p className="text-sm text-muted-foreground">{t('memory_recall_desc')}</p>
             </div>
           </button>
 
@@ -47,11 +49,11 @@ export function GameSelection() {
             className="flex w-full items-center gap-5 rounded-xl border border-border bg-card p-5 transition-colors duration-150 hover:border-primary/30 hover:bg-accent/50 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-              <Grid3X3 className="h-7 w-7 text-primary" />
+              <Shapes className="h-7 w-7 text-primary" />
             </div>
             <div className="flex-1 text-left">
-              <h2 className="text-lg font-semibold text-foreground">Pattern &amp; Attention</h2>
-              <p className="text-sm text-muted-foreground">Find what comes next</p>
+              <h2 className="text-lg font-semibold text-foreground">{t('pattern_attention')}</h2>
+              <p className="text-sm text-muted-foreground">{t('pattern_attention_desc')}</p>
             </div>
           </button>
         </div>

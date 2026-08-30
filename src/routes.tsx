@@ -2,10 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { RoleSelectionPage } from '@/pages/shared/role-selection'
 import { LanguageSelectPage } from '@/pages/patient/language-select'
 import { PatientHomePage } from '@/pages/patient/home'
-import { ActivityPage } from '@/pages/patient/activity'
 import { GameSelection } from '@/features/games/GameSelection'
-import { MemoryGame } from '@/features/games/memory/MemoryGame'
-import { PatternGame } from '@/features/games/pattern/PatternGame'
+import { MemoryJourney } from '@/features/games/memory/MemoryJourney'
+import { AttentionAdventure } from '@/features/games/attention/AttentionAdventure'
 import { RemindersPage } from '@/pages/patient/reminders'
 import { MemoriesPage } from '@/pages/patient/memories'
 import { ProgressPage } from '@/pages/patient/progress'
@@ -18,6 +17,7 @@ import { AddReminderPage } from '@/pages/caregiver/add-reminder'
 import { CaregiverRemindersPage } from '@/pages/caregiver/reminders'
 import { AddMemoryPage } from '@/pages/caregiver/add-memory'
 import { CaregiverReportsPage } from '@/pages/caregiver/reports'
+import { IS_DEMO_MODE } from '@/config/demo'
 
 export function AppRoutes() {
   return (
@@ -29,11 +29,10 @@ export function AppRoutes() {
       <Route path="/patient/language" element={<LanguageSelectPage />} />
       <Route path="/patient" element={<PatientHomePage />} />
       <Route path="/patient/games" element={<GameSelection />} />
-      <Route path="/patient/game/memory" element={<MemoryGame />} />
-      <Route path="/patient/game/pattern" element={<PatternGame />} />
+      <Route path="/patient/game/memory" element={<MemoryJourney />} />
+      <Route path="/patient/game/pattern" element={<AttentionAdventure />} />
 
-      {/* Legacy — daily mode flow */}
-      <Route path="/patient/activity" element={<ActivityPage />} />
+      <Route path="/patient/activity" element={<Navigate to="/patient/game/memory?mode=daily" replace />} />
 
       <Route path="/patient/reminders" element={<RemindersPage />} />
       <Route path="/patient/memories" element={<MemoriesPage />} />
@@ -43,6 +42,7 @@ export function AppRoutes() {
 
       {/* Caregiver Routes */}
       <Route path="/caregiver/login" element={<CaregiverLoginPage />} />
+      <Route path="/caregiver" element={<Navigate to={IS_DEMO_MODE ? '/caregiver/dashboard' : '/caregiver/login'} replace />} />
       <Route path="/caregiver/dashboard" element={<CaregiverDashboardPage />} />
       <Route path="/caregiver/reports" element={<CaregiverReportsPage />} />
       <Route path="/caregiver/patient" element={<PatientDetailsPage />} />

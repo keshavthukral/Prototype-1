@@ -28,24 +28,25 @@ class SpeechService {
     const requestKey = `${language}:${text}`
     if ((this.state.status === 'speaking' || this.state.status === 'loading') && this.state.requestKey === requestKey) { this.stop(); return }
     this.stop(); const generation = this.generation; this.setState({ status: 'loading', requestKey })
-    if (!text.trim()) { this.setState({ status: 'unavailable', message: 'Nothing to read aloud.', requestKey }); return }
+    if (!text.trim()) { this.setState({ status: 'unavailable', message: 'nothing_to_read', requestKey }); return }
 
     if (language === 'en') {
-      const started = await browserTTS.speak(text, 'en', { onStart: () => generation === this.generation && this.setState({ status: 'speaking', requestKey }), onEnd: () => generation === this.generation && this.setState({ status: 'idle' }), onError: () => generation === this.generation && this.setState({ status: 'unavailable', message: 'Voice is unavailable on this device.', requestKey }) })
-      if (!started && generation === this.generation) this.setState({ status: 'unavailable', message: 'Voice is unavailable on this device.', requestKey })
+      const started = await browserTTS.speak(text, 'en', { onStart: () => generation === this.generation && this.setState({ status: 'speaking', requestKey }), onEnd: () => generation === this.generation && this.setState({ status: 'idle' }), onError: () => generation === this.generation && this.setState({ status: 'unavailable', message: 'voice_unavailable_device', requestKey }) })
+      if (!started && generation === this.generation) this.setState({ status: 'unavailable', message: 'voice_unavailable_device', requestKey })
       return
     }
 
     if (await browserTTS.hasAssameseVoice()) {
       if (generation !== this.generation) return
-      await browserTTS.speak(text, 'as', { onStart: () => generation === this.generation && this.setState({ status: 'speaking', requestKey }), onEnd: () => generation === this.generation && this.setState({ status: 'idle' }), onError: () => generation === this.generation && this.setState({ status: 'unavailable', message: 'Assamese voice is unavailable.', requestKey }) })
+      await browserTTS.speak(text, 'as', { onStart: () => generation === this.generation && this.setState({ status: 'speaking', requestKey }), onEnd: () => generation === this.generation && this.setState({ status: 'idle' }), onError: () => generation === this.generation && this.setState({ status: 'unavailable', message: 'voice_unavailable_assamese', requestKey }) })
       return
     }
 
-    let audio = await speechCache.get('as', text)
-    if (!audio && navigator.onLine) { audio = await bhashiniTTS.synthesizeAssamese(text); if (audio) await speechCache.put('as', text, audio) }
+    let audio: Blob | null = null
+    if (navigator.onLine) { audio = await bhashiniTTS.synthesizeAssamese(text); if (audio) await speechCache.put('as', text, audio) }
+    if (!audio) audio = await speechCache.get('as', text)
     if (generation !== this.generation) return
-    if (!audio) { this.setState({ status: 'unavailable', message: navigator.onLine ? 'Assamese voice is not configured.' : 'Voice unavailable offline.', requestKey }); return }
+    if (!audio) { this.setState({ status: 'unavailable', message: navigator.onLine ? 'voice_not_configured' : 'voice_unavailable_offline', requestKey }); return }
     this.playAudio(audio, requestKey, generation)
   }
 
@@ -53,8 +54,8 @@ class SpeechService {
     this.audioUrl = URL.createObjectURL(blob); this.audio = new Audio(this.audioUrl)
     this.audio.onplay = () => generation === this.generation && this.setState({ status: 'speaking', requestKey })
     this.audio.onended = () => generation === this.generation && this.stop()
-    this.audio.onerror = () => generation === this.generation && this.setState({ status: 'unavailable', message: 'Cached voice could not be played.', requestKey })
-    void this.audio.play().catch(() => { if (generation === this.generation) this.setState({ status: 'unavailable', message: 'Tap Hear Again to allow audio playback.', requestKey }) })
+    this.audio.onerror = () => generation === this.generation && this.setState({ status: 'unavailable', message: 'voice_cached_error', requestKey })
+    void this.audio.play().catch(() => { if (generation === this.generation) this.setState({ status: 'unavailable', message: 'voice_tap_again', requestKey }) })
   }
   private setState(state: SpeechState) { this.state = state; this.listeners.forEach((listener) => listener(state)) }
 }

@@ -25,7 +25,7 @@ interface SupabaseMemoryRow {
 
 export function MemoriesPage() {
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const { user } = useAuth()
   const [memories, setMemories] = useState<LocalMemory[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -125,8 +125,10 @@ export function MemoriesPage() {
 
   const current = memories[currentIndex]
   const hasMultiple = memories.length > 1
+  const localized = (memory: LocalMemory) => ({ name: language === 'as' ? memory.nameAs ?? memory.name : memory.name, relationship: language === 'as' ? memory.relationshipAs ?? memory.relationship : memory.relationship, description: language === 'as' ? memory.descriptionAs ?? memory.description : memory.description })
+  const currentText = current ? localized(current) : null
   const readAloudText = current
-    ? `${current.name}. ${current.relationship ?? ''}. ${current.description ?? ''}`
+    ? `${currentText?.name}. ${currentText?.relationship ?? ''}. ${currentText?.description ?? ''}`
     : ''
 
   return (
@@ -167,14 +169,14 @@ export function MemoriesPage() {
         ) : viewAll ? (
           <section aria-labelledby="all-memories-heading" className="flex flex-col gap-5">
             <div className="flex items-center justify-between gap-4">
-              <h2 id="all-memories-heading" className="text-2xl font-bold text-foreground">All Memories</h2>
-              <Button variant="outline" onClick={() => setViewAll(false)}>Show One</Button>
+              <h2 id="all-memories-heading" className="text-2xl font-bold text-foreground">{t('all_memories')}</h2>
+              <Button variant="outline" onClick={() => setViewAll(false)}>{t('show_one')}</Button>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               {memories.map((memory, index) => (
                 <button key={memory.id} onClick={() => { setCurrentIndex(index); setViewAll(false) }} className="cursor-pointer overflow-hidden rounded-xl border border-border bg-card text-left transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-                  {memory.imageUrl && <img src={memory.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />}
-                  <span className="block p-5"><span className="block text-xl font-bold text-foreground">{memory.name}</span><span className="mt-1 block text-base text-primary">{memory.relationship}</span></span>
+                  {memory.imageUrl && <img src={memory.imageUrl} alt={localized(memory).name} className="aspect-[4/3] w-full object-cover" />}
+                  <span className="block p-5"><span className="block text-xl font-bold text-foreground">{localized(memory).name}</span><span className="mt-1 block text-base text-primary">{localized(memory).relationship}</span></span>
                 </button>
               ))}
             </div>
@@ -198,7 +200,7 @@ export function MemoriesPage() {
                 <div className="h-64 w-64 overflow-hidden rounded-xl bg-card ring-1 ring-border sm:h-80 sm:w-80">
                   <img
                     src={current.imageUrl}
-                    alt={current.name}
+                    alt={currentText?.name}
                     className="h-full w-full object-cover"
                     loading="lazy"
                   />
@@ -211,24 +213,24 @@ export function MemoriesPage() {
             </div>
 
             {/* Name */}
-            <h2 className="mb-1 text-[1.75rem] font-bold text-foreground">{current.name}</h2>
+            <h2 className="mb-1 text-[1.75rem] font-bold text-foreground">{currentText?.name}</h2>
 
             {/* Relationship */}
-            {current.relationship && (
-              <p className="mb-3 text-lg font-medium text-primary">{current.relationship}</p>
+            {currentText?.relationship && (
+              <p className="mb-3 text-lg font-medium text-primary">{currentText.relationship}</p>
             )}
 
             {/* Description */}
-            {current.description && (
+            {currentText?.description && (
               <p className="mb-6 max-w-sm text-center text-lg leading-relaxed text-muted-foreground">
-                {current.description}
+                {currentText.description}
               </p>
             )}
 
             {/* Read aloud */}
             <HearAgain
               text={readAloudText}
-              label="Hear Again"
+              label={t('hear_memory')}
               className="mb-8"
             />
 
@@ -238,10 +240,10 @@ export function MemoriesPage() {
                 <button
                   onClick={goToPrev}
                   className="flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-border bg-card text-base font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  aria-label={t('prev_memory')}
+                  aria-label={t('previous')}
                 >
                   <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                  {t('prev_memory')}
+                  {t('previous')}
                 </button>
                 <button
                   onClick={goToNext}
@@ -254,7 +256,7 @@ export function MemoriesPage() {
               </div>
             )}
 
-            <Button variant="outline" size="lg" className="mt-6 text-lg" onClick={() => setViewAll(true)}><LayoutGrid data-icon="inline-start" />View All Memories</Button>
+            <Button variant="outline" size="lg" className="mt-6 text-lg" onClick={() => setViewAll(true)}><LayoutGrid data-icon="inline-start" />{t('view_all_memories')}</Button>
 
             {/* Dot indicators for multiple memories */}
             {hasMultiple && (
@@ -269,7 +271,7 @@ export function MemoriesPage() {
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-transparent bg-secondary text-secondary-foreground hover:border-primary/30 hover:bg-accent'
                     }`}
-                    aria-label={`Memory ${idx + 1}`}
+                    aria-label={`${t('memories')} ${idx + 1}`}
                   >{idx + 1}</button>
                 ))}
               </div>

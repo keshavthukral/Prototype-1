@@ -1,5 +1,8 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, type ReactNode } from 'react'
 import type { Language } from '@/types'
+import { strings as legacyStrings } from './strings'
+import { en as patientEnglish } from '@/i18n/en'
+import { as as patientAssamese } from '@/i18n/as'
 
 interface LanguageContextType {
   language: Language
@@ -35,17 +38,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Import strings dynamically
-  const [strings, setStrings] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    import('./strings').then(({ strings: allStrings }) => {
-      setStrings(allStrings[language])
-    })
-  }, [language])
+  const strings: Record<string, string> = {
+    ...legacyStrings[language],
+    ...(language === 'en' ? patientEnglish : patientAssamese),
+  }
 
   const t = (key: string): string => {
-    return strings[key] ?? key
+    const value = strings[key]
+    if (value) return value
+    const message = `Missing ${language} translation: ${key}`
+    if (import.meta.env.DEV) throw new Error(message)
+    return `⟦${key}⟧`
   }
 
   return (

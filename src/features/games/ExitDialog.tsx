@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { useLanguage } from '@/lib/i18n/language-context'
 
 interface ExitDialogProps {
   open: boolean
@@ -16,24 +17,25 @@ interface ExitDialogProps {
 }
 
 export function ExitDialog({ open, onOpenChange, onLeave }: ExitDialogProps) {
+  const { t } = useLanguage()
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Leave this activity?</AlertDialogTitle>
+          <AlertDialogTitle>{t('exit_title')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Your progress in this activity will not be saved.
+            {t('exit_description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel className="cursor-pointer">
-            Continue Activity
+            {t('keep_playing')}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onLeave}
             className="cursor-pointer"
           >
-            Leave Activity
+            {t('leave_activity')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

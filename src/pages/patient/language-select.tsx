@@ -45,7 +45,7 @@ export function LanguageSelectPage() {
                   ? 'border-primary bg-primary/10 shadow-sm'
                   : 'border-border bg-card hover:border-primary/40 hover:bg-accent/50'
               )}
-              aria-label={`Select ${label}`}
+              aria-label={t('select_language_label').replace('{language}', label)}
               aria-pressed={language === code}
             >
               {/* Native script — primary, very large */}

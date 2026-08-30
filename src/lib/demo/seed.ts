@@ -29,7 +29,7 @@ export async function seedDemoData(): Promise<boolean> {
   if (isSupabaseConfigured()) return false
 
   const seedVersion = await dbOperations.getSetting('demo-seed-version')
-  if (seedVersion === '3') return false
+  if (seedVersion === '4') return false
   const alreadySeeded = await dbOperations.getSetting('demo-seeded') === 'true'
 
   console.info('%c🌱 Seeding demo data…', 'color: #0d9488; font-weight: bold;')
@@ -62,7 +62,7 @@ export async function seedDemoData(): Promise<boolean> {
         }
 
         // Memories
-        await db.memories.where('id').anyOf(['demo-m1', 'demo-m2', 'demo-m3', 'demo-m4']).delete()
+        await db.memories.where('id').anyOf(['demo-m1', 'demo-m2', 'demo-m3', 'demo-m4', 'demo-v2-m1', 'demo-v2-m2', 'demo-v2-m3', 'demo-v2-m4', 'demo-v2-m5']).delete()
         await db.memories.bulkPut(DEMO_MEMORIES as never)
 
         // Settings (mark as seeded)
@@ -78,7 +78,7 @@ export async function seedDemoData(): Promise<boolean> {
       'color: #64748b;'
     )
     console.info(
-      '%c   Sessions: 15 · Reminders: 5 · Memories: 5',
+      '%c   Sessions: 15 · Reminders: 6 · Memories: 8',
       'color: #64748b;'
     )
 

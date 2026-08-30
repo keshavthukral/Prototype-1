@@ -4,10 +4,10 @@ import { Home, Gamepad2, Bell, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { path: '/patient', icon: Home, labelKey: 'home', labelFallback: 'Home' },
-  { path: '/patient/games', icon: Gamepad2, labelKey: 'start_activity', labelFallback: 'Games' },
-  { path: '/patient/reminders', icon: Bell, labelKey: 'my_reminders', labelFallback: 'Reminders' },
-  { path: '/patient/memories', icon: BookOpen, labelKey: 'my_memories', labelFallback: 'Memories' },
+  { path: '/patient', icon: Home, labelKey: 'home' },
+  { path: '/patient/games', icon: Gamepad2, labelKey: 'games' },
+  { path: '/patient/reminders', icon: Bell, labelKey: 'reminders' },
+  { path: '/patient/memories', icon: BookOpen, labelKey: 'memories' },
 ]
 
 export function PatientBottomNav() {
@@ -19,10 +19,10 @@ export function PatientBottomNav() {
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card"
       role="navigation"
-      aria-label="Main navigation"
+      aria-label={t('main_navigation')}
     >
       <div className="mx-auto flex max-w-lg items-stretch">
-        {navItems.map(({ path, icon: Icon, labelKey, labelFallback }) => {
+        {navItems.map(({ path, icon: Icon, labelKey }) => {
           const isActive = location.pathname === path ||
             (path !== '/patient' && location.pathname.startsWith(path))
 
@@ -46,7 +46,7 @@ export function PatientBottomNav() {
                 'text-sm font-medium leading-tight',
                 isActive && 'font-semibold'
               )}>
-                {t(labelKey) || labelFallback}
+                {t(labelKey)}
               </span>
             </button>
           )

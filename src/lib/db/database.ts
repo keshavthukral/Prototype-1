@@ -38,6 +38,7 @@ export interface Reminder {
   patientId: string
   createdBy?: string
   title: string
+  titleAs?: string
   description?: string
   reminderType: 'medicine' | 'hydration' | 'meal' | 'walk' | 'family_call' | 'daily_activity'
   scheduledTime?: string
@@ -75,8 +76,11 @@ export interface Memory {
   patientId: string
   createdBy?: string
   name: string
+  nameAs?: string
   relationship?: string
+  relationshipAs?: string
   description?: string
+  descriptionAs?: string
   imageStoragePath?: string
   imageUrl?: string
   createdAt: Date

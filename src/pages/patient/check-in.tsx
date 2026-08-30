@@ -12,16 +12,11 @@ import { saveWellBeingCheckIn } from '@/lib/repositories/check-in'
 import type { ReportedEnergy, ReportedMood } from '@/lib/db/database'
 import { cn } from '@/lib/utils'
 
-const copy = {
-  en: { title: 'Daily Check-in', back: 'Back', next: 'Next', saving: 'Saving…', questions: ['How are you feeling today?', 'How is your energy today?', 'Would you like to talk to someone?'], moods: { very_good: 'Very good', good: 'Good', okay: 'Okay', not_so_good: 'Not so good' }, energies: { good: 'Good', okay: 'Okay', low: 'Low' }, contact: { no: "No, I'm okay", yes: 'Yes, contact my caregiver' }, thanks: 'Thank you for checking in.', saved: 'Your answers are saved on this device.', contactCaregiver: 'Contact Caregiver', home: 'Back to Home', saveError: 'Your check-in could not be saved. Please try again.' },
-  as: { title: 'দৈনিক খবৰ লোৱা', back: 'পিছলৈ', next: 'পৰৱৰ্তী', saving: 'সংৰক্ষণ হৈ আছে…', questions: ['আজি আপোনাৰ মন কেনেকুৱা?', 'আজি আপোনাৰ শক্তি কেনেকুৱা?', 'আপুনি কাৰোবাৰ লগত কথা পাতিব বিচাৰে নেকি?'], moods: { very_good: 'খুব ভাল', good: 'ভাল', okay: 'ঠিকেই আছে', not_so_good: 'ইমান ভাল নহয়' }, energies: { good: 'ভাল', okay: 'ঠিকেই আছে', low: 'কম' }, contact: { no: 'নালাগে, মই ঠিকেই আছোঁ', yes: 'হয়, মোৰ যত্ন লওঁতাজনৰ সৈতে যোগাযোগ কৰক' }, thanks: 'খবৰ দিয়াৰ বাবে ধন্যবাদ।', saved: 'আপোনাৰ উত্তৰ এই ডিভাইচত সংৰক্ষণ কৰা হৈছে।', contactCaregiver: 'যত্ন লওঁতাজনৰ সৈতে যোগাযোগ কৰক', home: 'মূল পৃষ্ঠালৈ', saveError: 'আপোনাৰ উত্তৰ সংৰক্ষণ কৰিব পৰা নগ’ল। আকৌ চেষ্টা কৰক।' },
-} as const
-
 type Step = 0 | 1 | 2 | 3
 
 export function CheckInPage() {
-  const { language } = useLanguage()
-  const c = copy[language]
+  const { t } = useLanguage()
+  const c = { title: t('checkin_title'), back: t('back'), next: t('next'), saving: t('saving'), questions: [t('checkin_q1'), t('checkin_q2'), t('checkin_q3')], moods: { very_good: t('mood_very_good'), good: t('mood_good'), okay: t('mood_okay'), not_so_good: t('mood_not_good') }, energies: { good: t('energy_good'), okay: t('energy_okay'), low: t('energy_low') }, contact: { no: t('contact_no'), yes: t('contact_yes') }, thanks: t('checkin_thanks'), saved: t('saved_device'), contactCaregiver: t('contact_caregiver'), home: t('back_home'), saveError: t('checkin_save_error') }
   const [step, setStep] = useState<Step>(0)
   const [mood, setMood] = useState<ReportedMood | null>(null)
   const [energy, setEnergy] = useState<ReportedEnergy | null>(null)
@@ -50,7 +45,7 @@ export function CheckInPage() {
           <Button asChild variant="ghost" className="min-h-12 px-3"><Link to="/patient"><ArrowLeft data-icon="inline-start" />{c.back}</Link></Button>
           {step < 3 && <p className="text-base font-semibold text-muted-foreground">{step + 1} / 3</p>}
         </div>
-        {step < 3 && <Progress value={((step + 1) / 3) * 100} className="mt-5 h-2" aria-label={`Question ${step + 1} of 3`} />}
+        {step < 3 && <Progress value={((step + 1) / 3) * 100} className="mt-5 h-2" aria-label={t('question_of').replace('{current}', String(step + 1)).replace('{total}', '3')} />}
         {step < 3 ? (
           <section aria-labelledby="check-in-question" className="flex flex-1 flex-col justify-center gap-8 py-10">
             <div className="flex flex-col items-center gap-5 text-center">

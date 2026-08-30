@@ -16,6 +16,7 @@ import {
   ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { IS_DEMO_MODE } from '@/config/demo'
 
 interface SidebarLayoutProps {
   children: ReactNode
@@ -82,6 +83,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       <div className="mx-4 mb-2">
         <SyncStatusIndicator />
       </div>
+      {IS_DEMO_MODE && <div className="mx-4 mb-3"><Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/patient')}>{t('patient_view')}</Button></div>}
 
       {/* User section */}
       <div className="border-t border-border px-4 py-4">

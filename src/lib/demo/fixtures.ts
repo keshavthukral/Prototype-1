@@ -7,7 +7,7 @@ export { DEMO_GAME_SESSIONS } from '@/data/demo/sessions'
 export const DEMO_SETTINGS = [
   { key: 'app-mode', value: 'demo' },
   { key: 'demo-seeded', value: 'true' },
-  { key: 'demo-seed-version', value: '3' },
+  { key: 'demo-seed-version', value: '4' },
   { key: 'demo-patient-id', value: 'demo-patient-anita-devi' },
   { key: 'demo-caregiver-id', value: 'demo-caregiver-rahul' },
 ]
