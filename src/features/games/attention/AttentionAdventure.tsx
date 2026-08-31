@@ -1,13 +1,14 @@
 /**
- * Attention Adventure — 6–8 short challenges from 7 types.
+ * Attention Adventure — 7 short challenges from 8 types.
  *
  * TYPE A: What Comes Next (visual sequences)
  * TYPE B: Find the Different One
- * TYPE C: Target Find
+ * TYPE C: Target Find (12–20 items)
  * TYPE D: Sequence Completion (A-B-C pattern)
  * TYPE E: Simple Number Pattern
  * TYPE F: Match the Pair
  * TYPE G: Quick Choice
+ * TYPE H: Rule Switch
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { GameShell } from '@/features/games/engine/GameShell'
 import { GameIntro } from '@/features/games/engine/GameIntro'
 import { FinalResult } from '@/features/games/engine/FinalResult'
+import { TelemetryTracker } from '@/features/games/engine/telemetry'
 import { AttentionMetricsCollector } from '@/features/games/metrics/collector'
 import type { ChallengeMetric } from '@/features/games/metrics/types'
 import { getSessionChallenges, type ChallengeConfig } from '@/features/games/data/challenges'
@@ -66,13 +68,16 @@ export function AttentionAdventure() {
   // Match-pair state
   const [matchSelected, setMatchSelected] = useState<string[]>([])
   const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set())
+  // Target-find state
+  const [targetFindSelected, setTargetFindSelected] = useState<Set<number>>(new Set())
+
+  // Rule-switch state
+  const [ruleSwitchIndex, setRuleSwitchIndex] = useState(0)
+  const [currentPrompt, setCurrentPrompt] = useState('')
 
   // Session
   const collectorRef = useRef(new AttentionMetricsCollector())
-
-  // Refs
-  const challengeStartedAt = useRef(0)
-  const firstInteractionAt = useRef<number | null>(null)
+  const telemetryRef = useRef(new TelemetryTracker())
 
   // ── Load difficulty ──
   useEffect(() => {
@@ -93,11 +98,6 @@ export function AttentionAdventure() {
   }, [user?.id])
 
   // ── Helpers ──
-  const noteInteraction = () => {
-    if (firstInteractionAt.current === null)
-      firstInteractionAt.current = performance.now()
-  }
-
   const beginChallenge = useCallback((nextIndex: number) => {
     setIndex(nextIndex)
     setSelectedIndex(null)
@@ -106,10 +106,19 @@ export function AttentionAdventure() {
     setShowHint(false)
     setMatchSelected([])
     setMatchedPairs(new Set())
-    challengeStartedAt.current = performance.now()
-    firstInteractionAt.current = null
+    setTargetFindSelected(new Set())
+    setRuleSwitchIndex(0)
+
+    const c = challenges[nextIndex]
+    if (c?.type === 'rule-switch' && c.ruleChanges) {
+      setCurrentPrompt(c.ruleChanges.from)
+    } else if (c) {
+      setCurrentPrompt(c.prompt)
+    }
+
+    telemetryRef.current.start(difficulty, c?.type ?? 'unknown')
     setPhase('challenge')
-  }, [])
+  }, [challenges, difficulty])
 
   // ── Start Game ──
   const startGame = () => {
@@ -124,29 +133,55 @@ export function AttentionAdventure() {
 
   // ── Selection ──
   const selectAnswer = (answerIndex: number) => {
-    noteInteraction()
+    telemetryRef.current.recordInteraction()
     if (selectedIndex !== null && selectedIndex !== answerIndex)
       setChanges((v) => v + 1)
     setSelectedIndex(answerIndex)
   }
 
   const useHint = () => {
-    noteInteraction()
+    telemetryRef.current.recordHint()
     setHints((v) => v + 1)
     setShowHint(true)
+  }
+
+  // ── Target Find toggle ──
+  const toggleTargetFind = (itemIndex: number) => {
+    telemetryRef.current.recordInteraction()
+    setTargetFindSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(itemIndex)) next.delete(itemIndex)
+      else next.add(itemIndex)
+      return next
+    })
+    setChanges((v) => v + 1)
+  }
+
+  // ── Rule Switch ──
+  const handleRuleSwitchAnswer = (answerIndex: number) => {
+    telemetryRef.current.recordInteraction()
+    if (selectedIndex !== null && selectedIndex !== answerIndex)
+      setChanges((v) => v + 1)
+    setSelectedIndex(answerIndex)
+
+    if (!current?.ruleChanges) return
+    const newRuleIdx = ruleSwitchIndex + 1
+    if (newRuleIdx >= (current.ruleChanges.changeAt ?? 2)) {
+      setCurrentPrompt(current.ruleChanges.to)
+    }
+    setRuleSwitchIndex(newRuleIdx)
   }
 
   // ── Match pair handlers ──
   const handleMatchSelect = (item: string) => {
     if (!current) return
-    noteInteraction()
+    telemetryRef.current.recordInteraction()
     if (matchedPairs.has(item)) return
 
     const next = [...matchSelected, item]
     setMatchSelected(next)
     setChanges((v) => v + 1)
 
-    // Check if we have a pair
     if (next.length === 2) {
       const pair = current.pairs?.find(
         (p) =>
@@ -159,7 +194,6 @@ export function AttentionAdventure() {
         newMatched.add(pair.right)
         setMatchedPairs(newMatched)
       }
-      // Clear selection after a brief delay
       setTimeout(() => setMatchSelected([]), 400)
     }
   }
@@ -167,17 +201,19 @@ export function AttentionAdventure() {
   // ── Record Challenge ──
   const recordChallenge = (completionState: 'completed' | 'skipped') => {
     if (!current) return
-    const now = performance.now()
 
     let isCorrect = false
     if (completionState === 'completed') {
       if (current.type === 'match-pair') {
-        // All pairs matched
         const totalPairs = current.pairs?.length ?? 0
         isCorrect = matchedPairs.size / 2 >= totalPairs
       } else if (current.type === 'target-find') {
-        // Handled differently — auto-submit
-        isCorrect = true
+        const targets = current.targetIndices ?? []
+        const selected = [...targetFindSelected]
+        const correctTargets = selected.filter((i) => targets.includes(i)).length
+        isCorrect = correctTargets === targets.length && selected.length === targets.length
+      } else if (current.type === 'rule-switch') {
+        isCorrect = selectedIndex !== null && current.options[selectedIndex] === current.answer
       } else {
         isCorrect =
           selectedIndex !== null &&
@@ -185,14 +221,16 @@ export function AttentionAdventure() {
       }
     }
 
+    const record = completionState === 'skipped'
+      ? telemetryRef.current.skip()
+      : telemetryRef.current.complete(isCorrect, isCorrect ? 100 : 0)
+
     const metric: ChallengeMetric = {
       challengeId: current.id,
       challengeType: current.type,
       correct: isCorrect,
-      responseTimeMs: Math.round(now - challengeStartedAt.current),
-      timeToFirstInteractionMs: Math.round(
-        (firstInteractionAt.current ?? now) - challengeStartedAt.current,
-      ),
+      responseTimeMs: record.completionTimeMs,
+      timeToFirstInteractionMs: record.timeToFirstInteractionMs,
       hints,
       skipped: completionState === 'skipped',
       changedAnswers: changes,
@@ -263,7 +301,6 @@ export function AttentionAdventure() {
       ? navigate(mode === 'daily' ? '/patient' : '/patient/games')
       : undefined
 
-  // ── Loading ──
   if (!ready) {
     return (
       <div className="patient-ui flex min-h-screen items-center justify-center bg-background">
@@ -272,7 +309,6 @@ export function AttentionAdventure() {
     )
   }
 
-  // ── Render ──
   return (
     <GameShell
       totalSteps={TOTAL_CHALLENGES}
@@ -281,7 +317,6 @@ export function AttentionAdventure() {
       celebrate={phase === 'final-result' && (accuracy >= 50 || mode === 'daily')}
       onBack={() => navigate(mode === 'daily' ? '/patient' : '/patient/games')}
     >
-      {/* ── INTRO ── */}
       {phase === 'intro' && (
         <GameIntro
           icon={Grid3X3}
@@ -293,24 +328,25 @@ export function AttentionAdventure() {
         />
       )}
 
-      {/* ── CHALLENGE ── */}
       {phase === 'challenge' && current && (
         <ChallengeView
           challenge={current}
           selectedIndex={selectedIndex}
+          currentPrompt={currentPrompt}
           showHint={showHint}
           hints={hints}
           matchSelected={matchSelected}
           matchedPairs={matchedPairs}
-          onSelect={selectAnswer}
+          targetFindSelected={targetFindSelected}
+          onSelect={current.type === 'rule-switch' ? handleRuleSwitchAnswer : selectAnswer}
           onMatchSelect={handleMatchSelect}
+          onTargetFindToggle={toggleTargetFind}
           onHint={useHint}
           onSubmit={() => recordChallenge('completed')}
           onSkip={() => recordChallenge('skipped')}
         />
       )}
 
-      {/* ── FEEDBACK ── */}
       {phase === 'feedback' && current && (
         <Feedback
           correct={correct}
@@ -320,7 +356,6 @@ export function AttentionAdventure() {
         />
       )}
 
-      {/* ── FINAL RESULT ── */}
       {phase === 'final-result' && (
         <FinalResult
           title="Pattern & Attention"
@@ -328,38 +363,21 @@ export function AttentionAdventure() {
           totalRounds={TOTAL_CHALLENGES}
           accuracy={accuracy}
           message={encouragingMessage}
-          onContinue={
-            mode === 'daily'
-              ? () => setPhase('daily-complete')
-              : undefined
-          }
-          onActivities={
-            mode === 'practice'
-              ? () => navigate('/patient/games')
-              : undefined
-          }
+          onContinue={mode === 'daily' ? () => setPhase('daily-complete') : undefined}
+          onActivities={mode === 'practice' ? () => navigate('/patient/games') : undefined}
           onAgain={startGame}
           continueLabel={t('finish_today')}
         />
       )}
 
-      {/* ── DAILY COMPLETE ── */}
       {phase === 'daily-complete' && (
         <section className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Check className="size-10" />
           </div>
-          <h1 className="mt-6 text-[2.5rem] font-bold text-foreground">
-            {t('daily_complete')}
-          </h1>
-          <p className="mt-3 text-xl text-muted-foreground">
-            {t('daily_complete_message')}
-          </p>
-          <Button
-            size="lg"
-            className="mt-9 min-h-16 w-full max-w-sm text-xl"
-            onClick={() => navigate('/patient')}
-          >
+          <h1 className="mt-6 text-[2.5rem] font-bold text-foreground">{t('daily_complete')}</h1>
+          <p className="mt-3 text-xl text-muted-foreground">{t('daily_complete_message')}</p>
+          <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={() => navigate('/patient')}>
             {t('return_home')}
           </Button>
         </section>
@@ -371,121 +389,75 @@ export function AttentionAdventure() {
 // ─── Challenge View ─────────────────────────────────────────────
 
 function ChallengeView({
-  challenge,
-  selectedIndex,
-  showHint,
-  hints,
-  matchSelected,
-  matchedPairs,
-  onSelect,
-  onMatchSelect,
-  onHint,
-  onSubmit,
-  onSkip,
+  challenge, selectedIndex, currentPrompt, showHint, hints,
+  matchSelected, matchedPairs, targetFindSelected,
+  onSelect, onMatchSelect, onTargetFindToggle, onHint, onSubmit, onSkip,
 }: {
-  challenge: ChallengeConfig
-  selectedIndex: number | null
-  showHint: boolean
-  hints: number
-  matchSelected: string[]
-  matchedPairs: Set<string>
-  onSelect: (index: number) => void
-  onMatchSelect: (item: string) => void
-  onHint: () => void
-  onSubmit: () => void
-  onSkip: () => void
+  challenge: ChallengeConfig; selectedIndex: number | null; currentPrompt: string
+  showHint: boolean; hints: number; matchSelected: string[]; matchedPairs: Set<string>
+  targetFindSelected: Set<number>
+  onSelect: (index: number) => void; onMatchSelect: (item: string) => void
+  onTargetFindToggle: (index: number) => void
+  onHint: () => void; onSubmit: () => void; onSkip: () => void
 }) {
   const { t } = useLanguage()
-  const isAttention = challenge.type === 'find-different'
+  const isOddOneOut = challenge.type === 'find-different'
   const isMatchPair = challenge.type === 'match-pair'
   const isTargetFind = challenge.type === 'target-find'
 
-  // For match-pair: check if all pairs are matched
   const allPairsMatched =
-    isMatchPair &&
-    challenge.pairs &&
-    matchedPairs.size >= challenge.pairs.length * 2
+    isMatchPair && challenge.pairs && matchedPairs.size >= challenge.pairs.length * 2
 
   return (
     <section className="flex flex-1 flex-col">
-      {/* Prompt */}
-      <h1 className="mt-3 text-center text-3xl font-bold text-foreground">
-        {challenge.prompt}
-      </h1>
+      <h1 className="mt-3 text-center text-3xl font-bold text-foreground">{currentPrompt}</h1>
 
-      {/* Hint */}
       {showHint && (
         <p className="mx-auto mt-4 rounded-xl bg-primary/10 px-5 py-3 text-lg font-medium text-primary">
-          {isAttention
-            ? 'Look carefully at each shape.'
-            : isMatchPair
-              ? 'Tap two cards that go together.'
-              : 'Look for what repeats or changes.'}
+          {isOddOneOut ? 'Look carefully at each shape.' : isMatchPair ? 'Tap two cards that go together.' : 'Look for what repeats or changes.'}
         </p>
       )}
 
-      {/* Visual sequence display */}
-      {!isAttention && !isMatchPair && !isTargetFind && challenge.sequence.length > 0 && (
-        <div
-          className="mx-auto mt-10 flex min-h-36 w-full max-w-3xl flex-wrap items-center justify-center gap-3 rounded-xl border border-border bg-card p-6"
-          aria-label="Visual sequence"
-        >
+      {/* Visual sequence */}
+      {!isOddOneOut && !isMatchPair && !isTargetFind && challenge.sequence.length > 0 && (
+        <div className="mx-auto mt-10 flex min-h-36 w-full max-w-3xl flex-wrap items-center justify-center gap-3 rounded-xl border border-border bg-card p-6" aria-label="Visual sequence">
           {challenge.sequence.map((item, i) => (
-            <span
-              key={`${item}-${i}`}
-              className="flex size-16 items-center justify-center rounded-xl bg-secondary text-4xl font-bold text-foreground"
-            >
-              {item}
-            </span>
+            <span key={`${item}-${i}`} className="flex size-16 items-center justify-center rounded-xl bg-secondary text-4xl font-bold text-foreground">{item}</span>
           ))}
-          <span className="flex size-16 items-center justify-center rounded-xl border-2 border-dashed border-primary bg-primary/10 text-4xl font-bold text-primary">
-            ?
-          </span>
+          <span className="flex size-16 items-center justify-center rounded-xl border-2 border-dashed border-primary bg-primary/10 text-4xl font-bold text-primary">?</span>
         </div>
       )}
 
       {/* Find Different grid */}
-      {isAttention && challenge.grid && (
-        <div
-          className="mx-auto mt-10 grid w-full max-w-md gap-3"
-          style={{
-            gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(challenge.grid.length))}, 1fr)`,
-          }}
-        >
+      {isOddOneOut && challenge.grid && (
+        <div className="mx-auto mt-10 grid w-full max-w-md gap-3"
+          style={{ gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(challenge.grid.length))}, 1fr)` }}>
           {challenge.grid.map((item, i) => {
             const isChosen = selectedIndex === i
             return (
-              <button
-                key={i}
-                onClick={() => onSelect(i)}
-                aria-pressed={isChosen}
-                className={`flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                  isChosen
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border bg-card hover:border-primary/40 hover:bg-accent'
-                }`}
-              >
+              <button key={i} onClick={() => onSelect(i)} aria-pressed={isChosen}
+                className={`relative flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isChosen ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
                 {item}
-                {isChosen && (
-                  <Check className="absolute right-2 top-2 size-5 text-primary" />
-                )}
+                {isChosen && <Check className="absolute right-2 top-2 size-5 text-primary" />}
               </button>
             )
           })}
         </div>
       )}
 
-      {/* Target Find display */}
+      {/* Target Find — toggleable items */}
       {isTargetFind && challenge.targetItems && (
         <div className="mx-auto mt-10 flex flex-wrap items-center justify-center gap-4 rounded-xl border border-border bg-card p-6">
-          {challenge.targetItems.map((item, i) => (
-            <span
-              key={i}
-              className="flex size-16 items-center justify-center rounded-xl bg-secondary text-3xl"
-            >
-              {item}
-            </span>
-          ))}
+          {challenge.targetItems.map((item, i) => {
+            const isSelected = targetFindSelected.has(i)
+            return (
+              <button key={i} onClick={() => onTargetFindToggle(i)} aria-pressed={isSelected}
+                className={`flex size-16 cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isSelected ? 'border-primary bg-primary/10' : 'border-transparent bg-secondary hover:border-primary/30'}`}>
+                {item}
+                {isSelected && <Check className="absolute -right-1 -top-1 size-4 text-primary" />}
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -496,83 +468,45 @@ function ChallengeView({
             const isMatched = matchedPairs.has(item)
             const isSelected = matchSelected.includes(item)
             return (
-              <button
-                key={item}
-                onClick={() => onMatchSelect(item)}
-                disabled={isMatched}
-                aria-pressed={isSelected}
-                className={`flex h-20 cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 ${
-                  isMatched
-                    ? 'border-success bg-success/10'
-                    : isSelected
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border bg-card hover:border-primary/40 hover:bg-accent'
-                }`}
-              >
+              <button key={item} onClick={() => onMatchSelect(item)} disabled={isMatched} aria-pressed={isSelected}
+                className={`relative flex h-20 cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 ${isMatched ? 'border-success bg-success/10' : isSelected ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
                 {item}
+                {isMatched && <Check className="absolute right-1 top-1 size-4 text-success" />}
               </button>
             )
           })}
         </div>
       )}
 
-      {/* Multiple choice options (for most challenge types) */}
-      {!isAttention && !isMatchPair && !isTargetFind && (
-        <div
-          className={`mx-auto mt-8 grid w-full max-w-3xl gap-4 ${
-            challenge.type === 'quick-choice' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-4'
-          }`}
-        >
+      {/* Multiple choice */}
+      {!isOddOneOut && !isMatchPair && !isTargetFind && (
+        <div className="mx-auto mt-8 grid w-full max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
           {challenge.options.map((option, optionIndex) => {
             const isSelected = selectedIndex === optionIndex
             return (
-              <button
-                key={`${option}-${optionIndex}`}
-                onClick={() => onSelect(optionIndex)}
-                aria-pressed={isSelected}
-                aria-label={`Answer ${optionIndex + 1}: ${option}`}
-                className="relative flex min-h-24 cursor-pointer items-center justify-center rounded-xl border-2 border-border bg-card text-4xl font-bold text-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary"
-              >
+              <button key={`${option}-${optionIndex}`} onClick={() => onSelect(optionIndex)}
+                aria-pressed={isSelected} aria-label={`Answer ${optionIndex + 1}: ${option}`}
+                className="relative flex min-h-24 cursor-pointer items-center justify-center rounded-xl border-2 border-border bg-card text-4xl font-bold text-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary">
                 {option}
-                {isSelected && (
-                  <Check className="absolute right-2 top-2 size-5 text-primary" />
-                )}
+                {isSelected && <Check className="absolute right-2 top-2 size-5 text-primary" />}
               </button>
             )
           })}
         </div>
       )}
 
-      {/* Buttons */}
       <div className="mx-auto mt-auto flex w-full max-w-3xl flex-col gap-3 pt-8 sm:flex-row">
-        <Button
-          variant="outline"
-          size="lg"
-          className="text-lg"
-          onClick={onHint}
-          disabled={showHint}
-        >
-          <Lightbulb data-icon="inline-start" />
-          {t('hint')} {hints > 0 ? `(${hints})` : ''}
+        <Button variant="outline" size="lg" className="text-lg" onClick={onHint} disabled={showHint}>
+          <Lightbulb data-icon="inline-start" />{t('hint')} {hints > 0 ? `(${hints})` : ''}
         </Button>
-        <Button variant="ghost" size="lg" className="text-lg" onClick={onSkip}>
-          {t('skip')}
-        </Button>
-        <Button
-          size="lg"
-          className="flex-1 text-lg"
-          onClick={onSubmit}
-          disabled={
-            !isMatchPair &&
-            !isTargetFind &&
-            selectedIndex === null
-          }
-        >
+        <Button variant="ghost" size="lg" className="text-lg" onClick={onSkip}>{t('skip')}</Button>
+        <Button size="lg" className="flex-1 text-lg" onClick={onSubmit}
+          disabled={!isMatchPair && !isTargetFind && selectedIndex === null}>
           {isMatchPair
-            ? allPairsMatched
-              ? t('check_answer')
-              : `${matchedPairs.size / 2} / ${challenge.pairs?.length ?? 0} matched`
-            : t('check_answer')}
+            ? allPairsMatched ? t('check_answer') : `${matchedPairs.size / 2} / ${challenge.pairs?.length ?? 0} matched`
+            : isTargetFind
+              ? `${targetFindSelected.size} selected`
+              : t('check_answer')}
         </Button>
       </div>
     </section>
@@ -581,44 +515,22 @@ function ChallengeView({
 
 // ─── Feedback ───────────────────────────────────────────────────
 
-function Feedback({
-  correct,
-  skipped,
-  last,
-  onNext,
-}: {
-  correct: boolean
-  skipped: boolean
-  last: boolean
-  onNext: () => void
+function Feedback({ correct, skipped, last, onNext }: {
+  correct: boolean; skipped: boolean; last: boolean; onNext: () => void
 }) {
   const { t } = useLanguage()
-
   return (
     <section className="flex flex-1 flex-col items-center justify-center text-center">
       <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Check className="size-10" />
       </div>
-
       <h1 className="mt-6 text-3xl font-bold text-foreground">
-        {skipped
-          ? t('thats_okay')
-          : correct
-            ? t('thats_right')
-            : t('nice_try')}
+        {skipped ? t('thats_okay') : correct ? t('thats_right') : t('nice_try')}
       </h1>
-
       {!correct && !skipped && (
-        <p className="mt-3 text-xl text-muted-foreground">
-          Keep trying — you are doing well.
-        </p>
+        <p className="mt-3 text-xl text-muted-foreground">Keep trying — you are doing well.</p>
       )}
-
-      <Button
-        size="lg"
-        className="mt-9 min-h-16 w-full max-w-sm text-xl"
-        onClick={onNext}
-      >
+      <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={onNext}>
         {last ? t('see_results') : t('next_question')}
       </Button>
     </section>

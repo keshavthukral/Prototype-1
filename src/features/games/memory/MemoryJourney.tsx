@@ -2,10 +2,12 @@
  * Memory Journey — 5-round memory game.
  *
  * Round 1: Visual Object Recall — show objects, recall from options
- * Round 2: Spatial Memory — show objects on grid, recall positions
- * Round 3: Order Memory — show sequence, reconstruct order
+ * Round 2: Spatial Memory — show objects on grid, recall positions (2-3 questions)
+ * Round 3: Sequence Memory — show sequence, reconstruct order
  * Round 4: Personal Memory — show family photo, identify person
  * Round 5: Delayed Recall — recall items shown at session start
+ *
+ * Internal scoring uses the scoring engine — never shown to the patient.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -19,7 +21,12 @@ import { RoundResult } from '@/features/games/engine/RoundResult'
 import { FinalResult } from '@/features/games/engine/FinalResult'
 import { ViewTimer } from '@/features/games/engine/ViewTimer'
 import { ObjectVisual } from '@/features/games/engine/ObjectVisual'
-import { useCountdown } from '@/features/games/engine/useCountdown'
+import { TelemetryTracker } from '@/features/games/engine/telemetry'
+import {
+  scoreObjectRecall,
+  scoreSequence,
+  scoreDelayedRecall,
+} from '@/features/games/engine/scoring'
 import { MemoryMetricsCollector } from '@/features/games/metrics/collector'
 import type {
   MemoryRoundMetric,
@@ -27,10 +34,15 @@ import type {
   SpatialMemoryMetric,
   OrderMemoryMetric,
   PersonalMemoryMetric,
+  DelayedRecallMetric,
 } from '@/features/games/metrics/types'
 import {
   OBJECT_POOL,
   buildMemoryRound,
+  spatialGridSize,
+  sequenceLength,
+  viewSeconds as getViewSeconds,
+  spatialQuestions,
 } from '@/features/games/data/objects'
 import {
   getPersonalMemoryCards,
@@ -83,14 +95,22 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-function viewSeconds(d: DifficultyLevel): number {
-  return d === 1 ? 8 : d === 2 ? 7 : 5
-}
-
 function gridCols(count: number): string {
   if (count <= 4) return 'grid-cols-2'
   if (count <= 6) return 'grid-cols-3'
   return 'grid-cols-4'
+}
+
+// ─── Spatial State ──────────────────────────────────────────────
+
+interface SpatialState {
+  grid: GameChoice[]
+  questions: GameChoice[]
+  currentQuestionIndex: number
+  correctCount: number
+  incorrectAttempts: number
+  firstChoiceCorrect: boolean
+  questionResults: Array<{ targetId: string; correct: boolean; responseTimeMs: number }>
 }
 
 // ─── Main Component ─────────────────────────────────────────────
@@ -113,8 +133,9 @@ export function MemoryJourney() {
   // Round configs
   const [config, setConfig] = useState<MemoryRoundConfig | null>(null)
   const [delayedObjects, setDelayedObjects] = useState<GameChoice[]>([])
-  const [locationObjects, setLocationObjects] = useState<GameChoice[]>([])
-  const [locationTarget, setLocationTarget] = useState<GameChoice | null>(null)
+
+  // Spatial state (supports multiple questions)
+  const [spatial, setSpatial] = useState<SpatialState | null>(null)
 
   // Selection state
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -124,7 +145,6 @@ export function MemoryJourney() {
   const [hints, setHints] = useState(0)
   const [showHint, setShowHint] = useState(false)
   const [changes, setChanges] = useState(0)
-  const [incorrectAttempts, setIncorrectAttempts] = useState(0)
   const [lastSummary, setLastSummary] = useState('')
   const [lastSubtitle, setLastSubtitle] = useState('')
 
@@ -143,13 +163,13 @@ export function MemoryJourney() {
   // Session
   const [metrics, setMetrics] = useState<MemoryRoundMetric[]>([])
   const collectorRef = useRef(new MemoryMetricsCollector())
+  const telemetryRef = useRef(new TelemetryTracker())
 
   // Refs
   const taskStartedAt = useRef(0)
-  const firstInteractionAt = useRef<number | null>(null)
-
-  // Countdown
-  const countdown = useCountdown()
+  const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [viewTimeLeft, setViewTimeLeft] = useState(0)
 
   // ── Load difficulty ──
   useEffect(() => {
@@ -169,21 +189,38 @@ export function MemoryJourney() {
     })()
   }, [user?.id])
 
-  // ── Helpers ──
-  const noteInteraction = () => {
-    if (firstInteractionAt.current === null)
-      firstInteractionAt.current = performance.now()
-  }
+  // Cleanup timers
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearTimeout(countdownRef.current)
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [])
+
+  // ── Timer helpers ──
+  const startCountdown = useCallback((seconds: number, onComplete: () => void) => {
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    if (countdownRef.current) clearTimeout(countdownRef.current)
+    setViewTimeLeft(seconds)
+    let remaining = seconds
+    intervalRef.current = setInterval(() => {
+      remaining -= 1
+      setViewTimeLeft(remaining)
+      if (remaining <= 0 && intervalRef.current) clearInterval(intervalRef.current)
+    }, 1000)
+    countdownRef.current = setTimeout(() => {
+      onComplete()
+      countdownRef.current = null
+    }, seconds * 1000)
+  }, [])
 
   const beginTask = useCallback(() => {
     setPhase('task')
     taskStartedAt.current = performance.now()
-    firstInteractionAt.current = null
   }, [])
 
   // ── Session Start ──
   const startSession = () => {
-    // Pick 3 delayed objects (quietly introduced)
     const delayed = shuffle(OBJECT_POOL).slice(0, 3)
     setDelayedObjects(delayed)
     collectorRef.current.reset()
@@ -191,10 +228,8 @@ export function MemoryJourney() {
     setTotalCorrect(0)
     setTotalPossible(0)
 
-    // Show delayed preview first
     setPhase('delayed-preview')
-    countdown.start(viewSeconds(difficulty), () => {
-      // Move to first round (visual-recall)
+    startCountdown(getViewSeconds(difficulty), () => {
       prepareRound(0, delayed)
     })
   }
@@ -208,43 +243,48 @@ export function MemoryJourney() {
       setHints(0)
       setShowHint(false)
       setChanges(0)
-      setIncorrectAttempts(0)
       setSelectedAnswer(null)
       setPersonalQuestion(null)
+      setSpatial(null)
       setShowHeader(true)
 
       const type = ROUND_TYPES[index]
 
       switch (type) {
         case 'visual-recall': {
-          const roundConfig = buildMemoryRound(difficulty)
+          const roundConfig = buildMemoryRound(difficulty, delayed.map((d) => d.id))
           setConfig(roundConfig)
           setPhase('memorise')
-          countdown.start(viewSeconds(difficulty), beginTask)
+          startCountdown(getViewSeconds(difficulty), beginTask)
           break
         }
 
         case 'spatial': {
-          const count = difficulty === 1 ? 4 : difficulty === 2 ? 6 : 8
-          const key = OBJECT_POOL.find((item) => item.id === 'key')!
-          const others = shuffle(
-            OBJECT_POOL.filter((item) => item.id !== 'key'),
-          ).slice(0, count - 1)
-          const locations = shuffle([key, ...others])
-          setLocationObjects(locations)
-          setLocationTarget(key)
-          setConfig({ targets: locations, distractors: [], options: locations })
+          const count = spatialGridSize(difficulty)
+          const qCount = spatialQuestions(difficulty)
+          const shuffledPool = shuffle(OBJECT_POOL)
+          const gridItems = shuffledPool.slice(0, count)
+          const questions = shuffle([...gridItems]).slice(0, qCount)
+          setSpatial({
+            grid: gridItems,
+            questions,
+            currentQuestionIndex: 0,
+            correctCount: 0,
+            incorrectAttempts: 0,
+            firstChoiceCorrect: false,
+            questionResults: [],
+          })
           setPhase('memorise')
-          countdown.start(viewSeconds(difficulty), beginTask)
+          startCountdown(getViewSeconds(difficulty), beginTask)
           break
         }
 
         case 'order': {
-          const count = difficulty + 2
+          const count = sequenceLength(difficulty)
           const targets = shuffle(OBJECT_POOL).slice(0, count)
           setConfig({ targets, distractors: [], options: shuffle(targets) })
           setPhase('memorise')
-          countdown.start(viewSeconds(difficulty), beginTask)
+          startCountdown(getViewSeconds(difficulty), beginTask)
           break
         }
 
@@ -257,7 +297,6 @@ export function MemoryJourney() {
               setPersonalQuestion(question)
             }
           }
-          // Personal memory doesn't need memorise phase — show directly
           beginTask()
           break
         }
@@ -271,29 +310,16 @@ export function MemoryJourney() {
               ),
             ).slice(0, difficulty + 1),
           ])
-          setConfig({
-            targets: delayed,
-            distractors: [],
-            options,
-          })
+          setConfig({ targets: delayed, distractors: [], options })
           beginTask()
           break
         }
-      }
-    },
-    [beginTask, countdown, difficulty],
-  )
-
-  const prepareRoundWithDelayed = useCallback(
-    (index: number) => {
-      prepareRound(index, delayedObjects)
-    },
-    [prepareRound, delayedObjects],
+      }  }, [beginTask, difficulty, startCountdown],
   )
 
   // ── Selection handlers ──
   const toggleSelected = (id: string) => {
-    noteInteraction()
+    telemetryRef.current.recordChange()
     setChanges((v) => v + 1)
     setSelected((current) => {
       const next = new Set(current)
@@ -303,19 +329,20 @@ export function MemoryJourney() {
   }
 
   const addToOrder = (item: GameChoice) => {
-    noteInteraction()
+    telemetryRef.current.recordInteraction()
     if (ordered.some((v) => v.id === item.id)) return
     setChanges((v) => v + 1)
     setOrdered((current) => [...current, item])
   }
 
   const removeFromOrder = (id: string) => {
-    noteInteraction()
+    telemetryRef.current.recordChange()
     setChanges((v) => v + 1)
     setOrdered((current) => current.filter((item) => item.id !== id))
   }
 
   const useHint = () => {
+    telemetryRef.current.recordHint()
     setHints((v) => v + 1)
     setShowHint(true)
   }
@@ -337,127 +364,152 @@ export function MemoryJourney() {
     setPhase('round-result')
   }
 
-  // ── Submit Visual Object Recall ──
+  // ── Submit Visual Object Recall (uses scoring engine) ──
   const submitObjectLike = () => {
     if (!config) return
-    const targetIds = new Set(config.targets.map((item) => item.id))
-    const correct = [...selected].filter((id) => targetIds.has(id)).length
-    const falseSelections = [...selected].filter((id) => !targetIds.has(id))
-      .length
-    const missed = config.targets.length - correct
-    const responseTimeMs = performance.now() - taskStartedAt.current
-    const accuracy =
-      config.targets.length > 0
-        ? Math.max(0, correct - falseSelections) / config.targets.length * 100
-        : 0
+    const score = scoreObjectRecall({
+      targetIds: new Set(config.targets.map((item) => item.id)),
+      selectedIds: [...selected],
+      totalTargets: config.targets.length,
+    })
 
     const metric: ObjectRecallMetric = {
       round: round + 1,
       roundType: 'object-recall',
-      correctTargets: correct,
-      missedTargets: missed,
-      incorrectSelections: falseSelections,
-      totalTargets: config.targets.length,
-      responseTimeMs,
-      timeToFirstInteractionMs: firstInteractionAt.current
-        ? firstInteractionAt.current - taskStartedAt.current
-        : responseTimeMs,
+      correctTargets: score.targetsSelectedCorrectly,
+      missedTargets: score.missedTargets,
+      incorrectSelections: score.falseSelections,
+      totalTargets: score.targetsShown,
+      responseTimeMs: performance.now() - taskStartedAt.current,
+      timeToFirstInteractionMs: telemetryRef.current['firstInteractionAt']
+        ? (telemetryRef.current['firstInteractionAt'] as number) - taskStartedAt.current
+        : performance.now() - taskStartedAt.current,
       hints,
-      accuracy,
+      accuracy: score.accuracy,
       skipped: false,
       selectionChanges: changes,
-      hesitationDurationMs: firstInteractionAt.current
-        ? firstInteractionAt.current - taskStartedAt.current
+      hesitationDurationMs: telemetryRef.current['firstInteractionAt']
+        ? (telemetryRef.current['firstInteractionAt'] as number) - taskStartedAt.current
         : 0,
     }
 
     finishRound(
       metric,
-      `${correct} of ${config.targets.length} remembered`,
+      `${score.targetsSelectedCorrectly} of ${score.targetsShown} remembered`,
       '',
-      Math.max(0, correct - falseSelections),
-      config.targets.length,
+      Math.max(0, score.targetsSelectedCorrectly - score.falseSelections),
+      score.targetsShown,
     )
   }
 
-  // ── Submit Order ──
+  // ── Spatial Location Choose ──
+  const chooseLocation = (index: number) => {
+    if (!spatial) return
+    telemetryRef.current.recordInteraction()
+    setChanges((v) => v + 1)
+
+    const currentQuestion = spatial.questions[spatial.currentQuestionIndex]
+    if (!currentQuestion) return
+
+    const gridItem = spatial.grid[index]
+    const isCorrect = gridItem?.id === currentQuestion.id
+    const responseTimeMs = performance.now() - taskStartedAt.current
+
+    const newIncorrectAttempts = isCorrect ? 0 : spatial.incorrectAttempts + 1
+    const firstChoiceCorrect = spatial.currentQuestionIndex === 0
+      ? isCorrect
+      : spatial.firstChoiceCorrect
+
+    if (!isCorrect) {
+      // Wrong — try again
+      setSpatial({
+        ...spatial,
+        incorrectAttempts: newIncorrectAttempts,
+      })
+      return
+    }
+
+    // Correct!
+    const newResults = [...spatial.questionResults, {
+      targetId: currentQuestion.id,
+      correct: true,
+      responseTimeMs,
+    }]
+
+    if (spatial.currentQuestionIndex + 1 >= spatial.questions.length) {
+      // All spatial questions done
+      const totalCorrect = spatial.correctCount + 1
+      const totalQ = spatial.questions.length
+      const accuracy = (totalCorrect / totalQ) * 100
+
+      const metric: SpatialMemoryMetric = {
+        round: round + 1,
+        roundType: 'spatial-memory',
+        correctLocations: totalCorrect,
+        totalLocations: totalQ,
+        spatialErrors: spatial.incorrectAttempts,
+        firstChoiceCorrect,
+        locationQuestions: newResults,
+        responseTimeMs: performance.now() - taskStartedAt.current,
+        timeToFirstInteractionMs: performance.now() - taskStartedAt.current,
+        hints,
+        accuracy,
+        skipped: false,
+        selectionChanges: changes,
+        hesitationDurationMs: 0,
+      }
+
+      finishRound(metric, `${totalCorrect} of ${totalQ} locations found`, '', totalCorrect, totalQ)
+    } else {
+      // Move to next question
+      setSpatial({
+        ...spatial,
+        currentQuestionIndex: spatial.currentQuestionIndex + 1,
+        correctCount: totalCorrect,
+        incorrectAttempts: 0,
+        firstChoiceCorrect,
+        questionResults: newResults,
+      })
+    }
+  }
+
+  // ── Submit Order (uses scoring engine) ──
   const submitOrder = () => {
     if (!config) return
-    const correctPositions = config.targets.filter(
-      (item, index) => ordered[index]?.id === item.id,
-    ).length
-    const responseTimeMs = performance.now() - taskStartedAt.current
-    const accuracy =
-      config.targets.length > 0
-        ? (correctPositions / config.targets.length) * 100
-        : 0
+    const correctOrder = config.targets.map((t) => t.id)
+    const userOrder = ordered.map((o) => o.id)
+
+    const score = scoreSequence({
+      correctOrder,
+      userOrder,
+      reorders: changes,
+      timeToFirstActionMs: performance.now() - taskStartedAt.current,
+      completionTimeMs: performance.now() - taskStartedAt.current,
+    })
 
     const metric: OrderMemoryMetric = {
       round: round + 1,
       roundType: 'order-memory',
-      correctPositions,
-      totalPositions: config.targets.length,
-      orderingErrors: config.targets.length - correctPositions,
-      responseTimeMs,
-      timeToFirstInteractionMs: firstInteractionAt.current
-        ? firstInteractionAt.current - taskStartedAt.current
-        : responseTimeMs,
+      correctPositions: score.correctPositions,
+      totalPositions: score.totalPositions,
+      orderingErrors: score.totalPositions - score.correctPositions,
+      sequenceDistance: score.sequenceDistance,
+      responseTimeMs: performance.now() - taskStartedAt.current,
+      timeToFirstInteractionMs: performance.now() - taskStartedAt.current,
       hints,
-      accuracy,
+      accuracy: score.accuracy,
       skipped: false,
       selectionChanges: changes,
-      hesitationDurationMs: firstInteractionAt.current
-        ? firstInteractionAt.current - taskStartedAt.current
-        : 0,
+      hesitationDurationMs: 0,
     }
 
     finishRound(
       metric,
-      `${correctPositions} of ${config.targets.length} positions correct`,
+      `${score.correctPositions} of ${score.totalPositions} positions correct`,
       '',
-      correctPositions,
-      config.targets.length,
+      score.correctPositions,
+      score.totalPositions,
     )
-  }
-
-  // ── Choose Location ──
-  const chooseLocation = (index: number) => {
-    noteInteraction()
-    setChanges((v) => v + 1)
-
-    if (locationObjects[index]?.id !== locationTarget?.id) {
-      setIncorrectAttempts((v) => v + 1)
-      return
-    }
-
-    const responseTimeMs = performance.now() - taskStartedAt.current
-    const metric: SpatialMemoryMetric = {
-      round: round + 1,
-      roundType: 'spatial-memory',
-      correctLocations: 1,
-      totalLocations: 1,
-      spatialErrors: incorrectAttempts,
-      locationQuestions: [
-        {
-          targetId: locationTarget?.id ?? '',
-          correct: true,
-          responseTimeMs,
-        },
-      ],
-      responseTimeMs,
-      timeToFirstInteractionMs: firstInteractionAt.current
-        ? firstInteractionAt.current - taskStartedAt.current
-        : responseTimeMs,
-      hints,
-      accuracy: 100,
-      skipped: false,
-      selectionChanges: changes,
-      hesitationDurationMs: firstInteractionAt.current
-        ? firstInteractionAt.current - taskStartedAt.current
-        : 0,
-    }
-
-    finishRound(metric, 'You found the right place', '', 1, 1)
   }
 
   // ── Submit Personal Memory ──
@@ -475,26 +527,55 @@ export function MemoryJourney() {
         (o) => o !== personalQuestion.correctAnswer,
       ),
       responseTimeMs,
-      timeToFirstInteractionMs: firstInteractionAt.current
-        ? firstInteractionAt.current - taskStartedAt.current
-        : responseTimeMs,
+      timeToFirstInteractionMs: performance.now() - taskStartedAt.current,
       hints,
       accuracy: isCorrect ? 100 : 0,
       skipped: false,
       selectionChanges: changes,
-      hesitationDurationMs: firstInteractionAt.current
-        ? firstInteractionAt.current - taskStartedAt.current
-        : 0,
+      hesitationDurationMs: 0,
     }
 
     finishRound(
       metric,
       isCorrect ? 'That is right!' : 'Nice try',
-      isCorrect
-        ? ''
-        : `The answer is ${personalQuestion.correctAnswer}.`,
+      isCorrect ? '' : `The answer is ${personalQuestion.correctAnswer}.`,
       isCorrect ? 1 : 0,
       1,
+    )
+  }
+
+  // ── Submit Delayed Recall (uses scoring engine) ──
+  const submitDelayedRecall = () => {
+    if (!config) return
+    const score = scoreDelayedRecall({
+      targetIds: new Set(config.targets.map((item) => item.id)),
+      selectedIds: [...selected],
+      totalTargets: config.targets.length,
+    })
+
+    const metric: DelayedRecallMetric = {
+      round: round + 1,
+      roundType: 'delayed-recall',
+      correctTargets: score.correct,
+      missedTargets: config.targets.length - score.correct,
+      incorrectSelections: score.falseSelections,
+      totalTargets: score.totalTargets,
+      itemsIntroducedEarlier: 3,
+      responseTimeMs: performance.now() - taskStartedAt.current,
+      timeToFirstInteractionMs: performance.now() - taskStartedAt.current,
+      hints,
+      accuracy: score.accuracy,
+      skipped: false,
+      selectionChanges: changes,
+      hesitationDurationMs: 0,
+    }
+
+    finishRound(
+      metric,
+      `${score.correct} of ${score.totalTargets} remembered`,
+      '',
+      Math.max(0, score.correct - score.falseSelections),
+      score.totalTargets,
     )
   }
 
@@ -503,7 +584,7 @@ export function MemoryJourney() {
     if (round + 1 >= TOTAL_ROUNDS) {
       persistAndFinish()
     } else {
-      prepareRoundWithDelayed(round + 1)
+      prepareRound(round + 1, delayedObjects)
     }
   }
 
@@ -515,8 +596,6 @@ export function MemoryJourney() {
       completed: true,
     })
 
-    const avgResponse = sessionMetrics.averageResponseTimeMs
-
     if (user?.id) {
       void Promise.allSettled([
         saveGameSession({
@@ -525,7 +604,7 @@ export function MemoryJourney() {
           difficultyLevel: difficulty,
           correctCount: totalCorrect,
           totalCount: totalPossible,
-          responseTimeMs: avgResponse,
+          responseTimeMs: sessionMetrics.averageResponseTimeMs,
           hintsUsed: metrics.reduce((sum, m) => sum + m.hints, 0),
         }),
         saveRichGameMetrics({
@@ -556,7 +635,7 @@ export function MemoryJourney() {
   const goBack = () =>
     phase === 'intro'
       ? navigate(mode === 'daily' ? '/patient' : '/patient/games')
-      : undefined // handled by exit dialog
+      : undefined
 
   // ── Loading ──
   if (!ready) {
@@ -592,18 +671,13 @@ export function MemoryJourney() {
       {phase === 'delayed-preview' && (
         <div className="flex flex-1 flex-col items-center justify-center">
           <ViewTimer
-            seconds={countdown.secondsLeft}
+            seconds={viewTimeLeft}
             title={t('remember_later')}
             subtitle={t('see_again_later')}
           />
-          <div
-            className={`mx-auto mt-8 grid w-full max-w-2xl gap-4 ${gridCols(delayedObjects.length)}`}
-          >
+          <div className={`mx-auto mt-8 grid w-full max-w-2xl gap-4 ${gridCols(delayedObjects.length)}`}>
             {delayedObjects.map((item) => (
-              <div
-                key={item.id}
-                className="flex min-h-28 flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-primary"
-              >
+              <div key={item.id} className="flex min-h-28 flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-primary">
                 <ObjectVisual item={item} />
               </div>
             ))}
@@ -612,10 +686,10 @@ export function MemoryJourney() {
       )}
 
       {/* ── MEMORISE PHASE ── */}
-      {phase === 'memorise' && config && (
+      {phase === 'memorise' && (
         <div className="flex flex-1 flex-col items-center justify-center">
           <ViewTimer
-            seconds={countdown.secondsLeft}
+            seconds={viewTimeLeft}
             title={
               ROUND_TYPES[round] === 'order'
                 ? t('remember_order')
@@ -625,26 +699,16 @@ export function MemoryJourney() {
             }
             subtitle={t('take_time')}
           />
-          <div
-            className={`mx-auto mt-8 grid w-full max-w-2xl gap-4 ${
-              ROUND_TYPES[round] === 'spatial'
-                ? gridCols(
-                    (ROUND_TYPES[round] === 'spatial'
-                      ? locationObjects
-                      : config.targets
-                    ).length,
-                  )
-                : 'grid-cols-2 sm:grid-cols-3'
-            }`}
-          >
-            {(ROUND_TYPES[round] === 'spatial'
-              ? locationObjects
-              : config.targets
+          <div className={`mx-auto mt-8 grid w-full max-w-2xl gap-4 ${
+            ROUND_TYPES[round] === 'spatial' && spatial
+              ? gridCols(spatial.grid.length)
+              : 'grid-cols-2 sm:grid-cols-3'
+          }`}>
+            {(ROUND_TYPES[round] === 'spatial' && spatial
+              ? spatial.grid
+              : config?.targets ?? []
             ).map((item) => (
-              <div
-                key={item.id}
-                className="flex min-h-32 flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-primary"
-              >
+              <div key={item.id} className="flex min-h-32 flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-primary">
                 <ObjectVisual item={item} />
               </div>
             ))}
@@ -653,43 +717,38 @@ export function MemoryJourney() {
       )}
 
       {/* ── TASK: Visual Object Recall (Round 1) ── */}
-      {phase === 'task' &&
-        ROUND_TYPES[round] === 'visual-recall' &&
-        config && (
-          <ObjectRecallTask
-            title={t('just_seen')}
-            config={config}
-            selected={selected}
-            onToggle={toggleSelected}
-            hints={hints}
-            showHint={showHint}
-            onHint={useHint}
-            onSubmit={submitObjectLike}
-          />
-        )}
+      {phase === 'task' && ROUND_TYPES[round] === 'visual-recall' && config && (
+        <ObjectRecallTask
+          title={t('just_seen')}
+          config={config}
+          selected={selected}
+          onToggle={toggleSelected}
+          hints={hints}
+          showHint={showHint}
+          onHint={useHint}
+          onSubmit={submitObjectLike}
+        />
+      )}
 
       {/* ── TASK: Spatial Memory (Round 2) ── */}
-      {phase === 'task' && ROUND_TYPES[round] === 'spatial' && (
+      {phase === 'task' && ROUND_TYPES[round] === 'spatial' && spatial && (
         <SpatialTask
-          count={locationObjects.length}
-          target={locationTarget}
-          attempts={incorrectAttempts}
+          spatial={spatial}
+          attempts={spatial.incorrectAttempts}
           onChoose={chooseLocation}
         />
       )}
 
       {/* ── TASK: Order Memory (Round 3) ── */}
-      {phase === 'task' &&
-        ROUND_TYPES[round] === 'order' &&
-        config && (
-          <OrderTask
-            config={config}
-            ordered={ordered}
-            onAdd={addToOrder}
-            onRemove={removeFromOrder}
-            onSubmit={submitOrder}
-          />
-        )}
+      {phase === 'task' && ROUND_TYPES[round] === 'order' && config && (
+        <OrderTask
+          config={config}
+          ordered={ordered}
+          onAdd={addToOrder}
+          onRemove={removeFromOrder}
+          onSubmit={submitOrder}
+        />
+      )}
 
       {/* ── TASK: Personal Memory (Round 4) ── */}
       {phase === 'task' && ROUND_TYPES[round] === 'personal' && (
@@ -697,7 +756,7 @@ export function MemoryJourney() {
           question={personalQuestion}
           selectedAnswer={selectedAnswer}
           onSelect={(answer) => {
-            noteInteraction()
+            telemetryRef.current.recordInteraction()
             setSelectedAnswer(answer)
             setChanges((v) => v + 1)
           }}
@@ -706,20 +765,18 @@ export function MemoryJourney() {
       )}
 
       {/* ── TASK: Delayed Recall (Round 5) ── */}
-      {phase === 'task' &&
-        ROUND_TYPES[round] === 'delayed' &&
-        config && (
-          <ObjectRecallTask
-            title={t('seen_earlier')}
-            config={config}
-            selected={selected}
-            onToggle={toggleSelected}
-            hints={hints}
-            showHint={showHint}
-            onHint={useHint}
-            onSubmit={submitObjectLike}
-          />
-        )}
+      {phase === 'task' && ROUND_TYPES[round] === 'delayed' && config && (
+        <ObjectRecallTask
+          title={t('seen_earlier')}
+          config={config}
+          selected={selected}
+          onToggle={toggleSelected}
+          hints={hints}
+          showHint={showHint}
+          onHint={useHint}
+          onSubmit={submitDelayedRecall}
+        />
+      )}
 
       {/* ── ROUND RESULT ── */}
       {phase === 'round-result' && (
@@ -741,10 +798,7 @@ export function MemoryJourney() {
           message={encouragingMessage}
           onContinue={
             mode === 'daily'
-              ? () =>
-                  navigate(
-                    '/patient/game/pattern?mode=daily',
-                  )
+              ? () => navigate('/patient/game/pattern?mode=daily')
               : undefined
           }
           onActivities={
@@ -766,77 +820,38 @@ export function MemoryJourney() {
 // ─── Sub-tasks ──────────────────────────────────────────────────
 
 function ObjectRecallTask({
-  title,
-  config,
-  selected,
-  onToggle,
-  hints,
-  showHint,
-  onHint,
-  onSubmit,
+  title, config, selected, onToggle, hints, showHint, onHint, onSubmit,
 }: {
-  title: string
-  config: MemoryRoundConfig
-  selected: Set<string>
-  onToggle: (id: string) => void
-  hints: number
-  showHint: boolean
-  onHint: () => void
-  onSubmit: () => void
+  title: string; config: MemoryRoundConfig; selected: Set<string>
+  onToggle: (id: string) => void; hints: number; showHint: boolean
+  onHint: () => void; onSubmit: () => void
 }) {
   const { t } = useLanguage()
-
   return (
     <section className="flex flex-1 flex-col">
-      <h1 className="mt-4 text-center text-3xl font-bold text-foreground">
-        {title}
-      </h1>
-
+      <h1 className="mt-4 text-center text-3xl font-bold text-foreground">{title}</h1>
       {showHint && (
         <p className="mx-auto mt-4 rounded-xl bg-primary/10 px-5 py-3 text-lg font-medium text-primary">
           {t('memory_hint')}
         </p>
       )}
-
       <div className="mx-auto mt-8 grid w-full max-w-2xl grid-cols-2 gap-4 sm:grid-cols-3">
         {config.options.map((item) => {
           const chosen = selected.has(item.id)
           return (
-            <button
-              key={item.id}
-              onClick={() => onToggle(item.id)}
-              aria-pressed={chosen}
-              className="relative flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-border bg-card p-4 text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10"
-            >
+            <button key={item.id} onClick={() => onToggle(item.id)} aria-pressed={chosen}
+              className="relative flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-border bg-card p-4 text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10">
               <ObjectVisual item={item} />
-              {chosen && (
-                <Check
-                  className="absolute right-3 top-3 size-6 text-primary"
-                  aria-label={t('selected')}
-                />
-              )}
+              {chosen && <Check className="absolute right-3 top-3 size-6 text-primary" aria-label={t('selected')} />}
             </button>
           )
         })}
       </div>
-
       <div className="mx-auto mt-auto flex w-full max-w-2xl flex-col gap-3 pt-7 sm:flex-row">
-        <Button
-          variant="outline"
-          size="lg"
-          className="flex-1 text-lg"
-          onClick={onHint}
-          disabled={showHint}
-        >
-          <Lightbulb data-icon="inline-start" />
-          {t('hint')} {hints > 0 ? `(${hints})` : ''}
+        <Button variant="outline" size="lg" className="flex-1 text-lg" onClick={onHint} disabled={showHint}>
+          <Lightbulb data-icon="inline-start" />{t('hint')} {hints > 0 ? `(${hints})` : ''}
         </Button>
-        <Button
-          size="lg"
-          className="flex-1 text-lg"
-          onClick={onSubmit}
-          disabled={selected.size === 0}
-        >
+        <Button size="lg" className="flex-1 text-lg" onClick={onSubmit} disabled={selected.size === 0}>
           {t('submit_answer')}
         </Button>
       </div>
@@ -845,50 +860,32 @@ function ObjectRecallTask({
 }
 
 function SpatialTask({
-  count,
-  target,
-  attempts,
-  onChoose,
+  spatial, attempts, onChoose,
 }: {
-  count: number
-  target: GameChoice | null
-  attempts: number
-  onChoose: (index: number) => void
+  spatial: SpatialState; attempts: number; onChoose: (index: number) => void
 }) {
   const { t } = useLanguage()
+  const currentQ = spatial.questions[spatial.currentQuestionIndex]
+  if (!currentQ) return null
 
   return (
     <section className="flex flex-1 flex-col items-center">
       <h1 className="mt-5 text-center text-3xl font-bold text-foreground">
-        {t('where_was').replace(
-          '{object}',
-          target?.label.toLowerCase() ?? '',
-        )}
+        {t('where_was').replace('{object}', currentQ.label.toLowerCase())}
       </h1>
       <p className="mt-2 text-lg text-muted-foreground">
-        {t('choose_place')}
+        Question {spatial.currentQuestionIndex + 1} of {spatial.questions.length}
       </p>
-
       {attempts > 0 && (
-        <p
-          role="status"
-          className="mt-4 rounded-xl bg-secondary px-5 py-3 text-lg text-foreground"
-        >
+        <p role="status" className="mt-4 rounded-xl bg-secondary px-5 py-3 text-lg text-foreground">
           {t('try_another_place')}
         </p>
       )}
-
-      <div
-        className={`mt-8 grid w-full max-w-2xl gap-4 ${gridCols(count)}`}
-      >
-        {Array.from({ length: count }, (_, index) => (
-          <button
-            key={index}
-            onClick={() => onChoose(index)}
-            className="flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 border-border bg-card text-2xl font-bold text-muted-foreground transition-colors duration-150 hover:border-primary/50 hover:bg-primary/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            aria-label={t('position').replace('{number}', String(index + 1))}
-          >
-            {index + 1}
+      <div className={`mt-8 grid w-full max-w-2xl gap-4 ${gridCols(spatial.grid.length)}`}>
+        {spatial.grid.map((item, index) => (
+          <button key={index} onClick={() => onChoose(index)}
+            className="flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 border-border bg-card transition-colors duration-150 hover:border-primary/50 hover:bg-primary/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            <ObjectVisual item={item} compact={spatial.grid.length > 6} />
           </button>
         ))}
       </div>
@@ -897,74 +894,41 @@ function SpatialTask({
 }
 
 function OrderTask({
-  config,
-  ordered,
-  onAdd,
-  onRemove,
-  onSubmit,
+  config, ordered, onAdd, onRemove, onSubmit,
 }: {
-  config: MemoryRoundConfig
-  ordered: GameChoice[]
-  onAdd: (item: GameChoice) => void
-  onRemove: (id: string) => void
-  onSubmit: () => void
+  config: MemoryRoundConfig; ordered: GameChoice[]
+  onAdd: (item: GameChoice) => void; onRemove: (id: string) => void; onSubmit: () => void
 }) {
   const { t } = useLanguage()
-
   return (
     <section className="flex flex-1 flex-col">
-      <h1 className="mt-4 text-center text-3xl font-bold text-foreground">
-        {t('order_instruction')}
-      </h1>
-      <p className="mt-2 text-center text-lg text-muted-foreground">
-        {t('order_help')}
-      </p>
-
+      <h1 className="mt-4 text-center text-3xl font-bold text-foreground">{t('order_instruction')}</h1>
+      <p className="mt-2 text-center text-lg text-muted-foreground">{t('order_help')}</p>
       <div className="mx-auto mt-7 flex w-full max-w-3xl flex-wrap justify-center gap-3">
         {config.options.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onAdd(item)}
+          <button key={item.id} onClick={() => onAdd(item)}
             disabled={ordered.some((v) => v.id === item.id)}
-            className="flex min-h-24 min-w-28 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-border bg-card p-3 text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
-          >
+            className="flex min-h-24 min-w-28 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-border bg-card p-3 text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100">
             <ObjectVisual item={item} compact />
           </button>
         ))}
       </div>
-
       <ol className="mx-auto mt-8 grid w-full max-w-3xl gap-3 sm:grid-cols-2">
         {Array.from({ length: config.targets.length }, (_, index) => {
           const item = ordered[index]
           return (
             <li key={index} className="min-h-20">
-              <button
-                disabled={!item}
-                onClick={() => item && onRemove(item.id)}
-                className="flex min-h-20 w-full cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-border bg-card px-5 text-left text-primary transition-colors duration-150 hover:border-primary/40 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
-              >
-                <span className="text-xl font-bold text-muted-foreground">
-                  {index + 1}
-                </span>
-                {item ? (
-                  <ObjectVisual item={item} compact />
-                ) : (
-                  <span className="text-lg text-muted-foreground">
-                    {t('choose_object')}
-                  </span>
-                )}
+              <button disabled={!item} onClick={() => item && onRemove(item.id)}
+                className="flex min-h-20 w-full cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-border bg-card px-5 text-left text-primary transition-colors duration-150 hover:border-primary/40 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100">
+                <span className="text-xl font-bold text-muted-foreground">{index + 1}</span>
+                {item ? <ObjectVisual item={item} compact /> : <span className="text-lg text-muted-foreground">{t('choose_object')}</span>}
               </button>
             </li>
           )
         })}
       </ol>
-
-      <Button
-        size="lg"
-        className="mx-auto mt-auto w-full max-w-sm text-lg"
-        disabled={ordered.length !== config.targets.length}
-        onClick={onSubmit}
-      >
+      <Button size="lg" className="mx-auto mt-auto w-full max-w-sm text-lg"
+        disabled={ordered.length !== config.targets.length} onClick={onSubmit}>
         {t('check_order')}
       </Button>
     </section>
@@ -972,88 +936,41 @@ function OrderTask({
 }
 
 function PersonalMemoryTask({
-  question,
-  selectedAnswer,
-  onSelect,
-  onSubmit,
+  question, selectedAnswer, onSelect, onSubmit,
 }: {
-  question: {
-    card: { id: string; name: string; relationship: string; imageUrl: string; description: string }
-    options: string[]
-    correctAnswer: string
-  } | null
-  selectedAnswer: string | null
-  onSelect: (answer: string) => void
-  onSubmit: () => void
+  question: { card: { id: string; name: string; relationship: string; imageUrl: string; description: string }; options: string[]; correctAnswer: string } | null
+  selectedAnswer: string | null; onSelect: (answer: string) => void; onSubmit: () => void
 }) {
   const { t } = useLanguage()
-
   if (!question) {
-    // Fallback: show generic object recall
     return (
       <section className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="flex size-20 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Heart className="size-10" />
-        </div>
-        <h1 className="mt-6 text-3xl font-bold text-foreground">
-          Personal memories are being prepared.
-        </h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          This round will be available soon.
-        </p>
-        <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={onSubmit}>
-          {t('next_round')}
-        </Button>
+        <div className="flex size-20 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Heart className="size-10" /></div>
+        <h1 className="mt-6 text-3xl font-bold text-foreground">Personal memories are being prepared.</h1>
+        <p className="mt-3 text-lg text-muted-foreground">This round will be available soon.</p>
+        <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={onSubmit}>{t('next_round')}</Button>
       </section>
     )
   }
-
   return (
     <section className="flex flex-1 flex-col items-center">
-      <h1 className="mt-5 text-center text-3xl font-bold text-foreground">
-        Who is this?
-      </h1>
-      <p className="mt-2 text-lg text-muted-foreground">
-        {question.card.description}
-      </p>
-
+      <h1 className="mt-5 text-center text-3xl font-bold text-foreground">Who is this?</h1>
+      <p className="mt-2 text-lg text-muted-foreground">{question.card.description}</p>
       <div className="mt-8 flex size-40 items-center justify-center overflow-hidden rounded-2xl border-2 border-border bg-card">
-        <img
-          src={question.card.imageUrl}
-          alt={question.card.name}
-          className="size-full object-cover"
-        />
+        <img src={question.card.imageUrl} alt={question.card.name} className="size-full object-cover" />
       </div>
-
       <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-1 gap-3">
         {question.options.map((option) => {
           const chosen = selectedAnswer === option
           return (
-            <button
-              key={option}
-              onClick={() => onSelect(option)}
-              aria-pressed={chosen}
-              className={`flex min-h-16 cursor-pointer items-center justify-center rounded-xl border-2 px-6 text-lg font-semibold transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                chosen
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent'
-              }`}
-            >
-              {option}
-              {chosen && (
-                <Check className="ml-3 size-5 text-primary" />
-              )}
+            <button key={option} onClick={() => onSelect(option)} aria-pressed={chosen}
+              className={`flex min-h-16 cursor-pointer items-center justify-center rounded-xl border-2 px-6 text-lg font-semibold transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${chosen ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent'}`}>
+              {option}{chosen && <Check className="ml-3 size-5 text-primary" />}
             </button>
           )
         })}
       </div>
-
-      <Button
-        size="lg"
-        className="mx-auto mt-auto w-full max-w-sm text-lg"
-        disabled={selectedAnswer === null}
-        onClick={onSubmit}
-      >
+      <Button size="lg" className="mx-auto mt-auto w-full max-w-sm text-lg" disabled={selectedAnswer === null} onClick={onSubmit}>
         {t('submit_answer')}
       </Button>
     </section>

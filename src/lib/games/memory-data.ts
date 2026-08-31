@@ -42,6 +42,7 @@ export const OBJECTS_PER_LEVEL: Record<DifficultyLevel, number> = {
   1: 3,
   2: 4,
   3: 6,
+  4: 7,
 }
 
 /**

@@ -80,10 +80,17 @@ describe('computeNextDifficulty', () => {
       expect(result.reasoning).toContain('level 3')
     })
 
-    it('does NOT increase beyond 3', () => {
+    it('increases from 3 to 4 after 2+ strong sessions', () => {
       const sessions = makeStrongSessions(3, 3)
       const result = computeNextDifficulty(3, sessions)
-      expect(result.newDifficulty).toBe(3)
+      expect(result.newDifficulty).toBe(4)
+      expect(result.reasoning).toContain('level 4')
+    })
+
+    it('does NOT increase beyond 4', () => {
+      const sessions = makeStrongSessions(3, 4)
+      const result = computeNextDifficulty(4, sessions)
+      expect(result.newDifficulty).toBe(4)
     })
   })
 

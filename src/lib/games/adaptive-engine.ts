@@ -10,12 +10,13 @@
  *   - Middling performance → maintain
  *   - Repeated low accuracy or many hints → decrease
  *   - Never jump more than one level at a time
- *   - Difficulty is bounded 1–3
+ *   - Difficulty is bounded 1–4
+ *   - Never intentionally make the activity frustrating
  */
 
 // ─── Types ────────────────────────────────────────────────────
 
-export type DifficultyLevel = 1 | 2 | 3
+export type DifficultyLevel = 1 | 2 | 3 | 4
 
 export interface SessionResult {
   /** Number of correct answers out of total targets */
@@ -42,7 +43,7 @@ export interface DifficultyDecision {
 /**
  * Compute the next difficulty level based on recent session history.
  *
- * @param currentDifficulty - The player's current difficulty level (1–3)
+ * @param currentDifficulty - The player's current difficulty level (1–4)
  * @param recentSessions - Array of recent session results (newest first)
  * @returns A DifficultyDecision with the recommended next level and reasoning
  */
@@ -65,6 +66,7 @@ export function computeNextDifficulty(
     1: { fast: 15_000, slow: 45_000 },
     2: { fast: 20_000, slow: 60_000 },
     3: { fast: 25_000, slow: 90_000 },
+    4: { fast: 30_000, slow: 120_000 },
   }
 
   // Take the most recent sessions up to the window size
@@ -101,7 +103,7 @@ export function computeNextDifficulty(
   if (
     composite >= compositeUp &&
     consecutiveStrong >= maxConsecutive &&
-    currentDifficulty < 3
+    currentDifficulty < 4
   ) {
     const newLevel = (currentDifficulty + 1) as DifficultyLevel
     return {

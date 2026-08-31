@@ -7,7 +7,7 @@
 
 import type { DifficultyLevel } from '@/lib/games/adaptive-engine'
 
-// ─── Round-level metrics ────────────────────────────────────────
+// ─── Base metric ────────────────────────────────────────────────
 
 export interface BaseRoundMetric {
   round: number
@@ -20,6 +20,8 @@ export interface BaseRoundMetric {
   selectionChanges: number
   hesitationDurationMs: number
 }
+
+// ─── Memory round metrics ───────────────────────────────────────
 
 export interface ObjectRecallMetric extends BaseRoundMetric {
   roundType: 'object-recall'
@@ -34,6 +36,7 @@ export interface SpatialMemoryMetric extends BaseRoundMetric {
   correctLocations: number
   totalLocations: number
   spatialErrors: number
+  firstChoiceCorrect: boolean
   locationQuestions: Array<{
     targetId: string
     correct: boolean
@@ -46,6 +49,7 @@ export interface OrderMemoryMetric extends BaseRoundMetric {
   correctPositions: number
   totalPositions: number
   orderingErrors: number
+  sequenceDistance: number
 }
 
 export interface PersonalMemoryMetric extends BaseRoundMetric {
@@ -81,6 +85,7 @@ export type ChallengeType =
   | 'number-pattern'
   | 'match-pair'
   | 'quick-choice'
+  | 'rule-switch'
 
 export interface ChallengeMetric {
   challengeId: string
@@ -102,9 +107,13 @@ export interface MemorySessionMetrics {
   rounds: MemoryRoundMetric[]
   totalAccuracy: number
   averageResponseTimeMs: number
+  medianResponseTimeMs: number
   performanceByRound: number[]
-  performanceChange: number // late rounds vs early rounds
+  performanceChange: number
   delayedRecallAccuracy: number | null
+  falseSelectionRate: number
+  hintRate: number
+  completionRate: number
   completed: boolean
   duration: number
 }
@@ -116,6 +125,8 @@ export interface AttentionSessionMetrics {
   totalAccuracy: number
   averageResponseTimeMs: number
   averageResponseVariationMs: number
+  errorRate: number
+  completionRate: number
   completed: boolean
   duration: number
 }

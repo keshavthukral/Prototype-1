@@ -12,6 +12,7 @@ import type {
   ChallengeMetric,
   AttentionSessionMetrics,
 } from './types'
+import { median } from '../engine/scoring'
 
 // ─── Memory session collector ───────────────────────────────────
 
@@ -38,16 +39,21 @@ export class MemoryMetricsCollector {
           completedRounds.length
         : 0
 
-    // Average response time
-    const avgResponse =
-      completedRounds.length > 0
+    // Response times
+    const responseTimes = completedRounds
+      .map((r) => r.responseTimeMs)
+      .filter((t) => t > 0)
+
+    const averageResponseTimeMs =
+      responseTimes.length > 0
         ? Math.round(
-            completedRounds.reduce((sum, r) => sum + r.responseTimeMs, 0) /
-              completedRounds.length,
+            responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length,
           )
         : 0
 
-    // Performance by round (accuracy per round)
+    const medianResponseTimeMs = Math.round(median(responseTimes))
+
+    // Performance by round
     const performanceByRound = this.rounds.map((r) => r.accuracy)
 
     // Performance change: compare early vs late rounds
@@ -69,15 +75,43 @@ export class MemoryMetricsCollector {
     const delayed = this.rounds.find((r) => r.roundType === 'delayed-recall')
     const delayedRecallAccuracy = delayed ? delayed.accuracy : null
 
+    // False selection rate
+    let totalFalseSelections = 0
+    let totalSelections = 0
+    for (const r of this.rounds) {
+      if (r.roundType === 'object-recall' || r.roundType === 'delayed-recall') {
+        totalFalseSelections += r.incorrectSelections
+        totalSelections += r.correctTargets + r.incorrectSelections
+      }
+    }
+    const falseSelectionRate = totalSelections > 0
+      ? Math.round((totalFalseSelections / totalSelections) * 100)
+      : 0
+
+    // Hint rate
+    const totalHints = this.rounds.reduce((sum, r) => sum + r.hints, 0)
+    const hintRate = this.rounds.length > 0
+      ? Math.round((totalHints / this.rounds.length) * 100)
+      : 0
+
+    // Completion rate
+    const completionRate = params.completed ? 100 : Math.round(
+      (completedRounds.length / this.rounds.length) * 100,
+    )
+
     return {
       mode: params.mode,
       difficulty: params.difficulty,
       rounds: this.rounds,
       totalAccuracy,
-      averageResponseTimeMs: avgResponse,
+      averageResponseTimeMs,
+      medianResponseTimeMs,
       performanceByRound,
       performanceChange,
       delayedRecallAccuracy,
+      falseSelectionRate,
+      hintRate,
+      completionRate,
       completed: params.completed,
       duration,
     }
@@ -137,6 +171,20 @@ export class AttentionMetricsCollector {
           )
         : 0
 
+    // Error rate
+    const errorRate = completed.length > 0
+      ? Math.round(
+          ((completed.length - completed.filter((c) => c.correct).length) /
+            completed.length) *
+            100,
+        )
+      : 0
+
+    // Completion rate
+    const completionRate = params.completed ? 100 : Math.round(
+      (completed.length / this.challenges.length) * 100,
+    )
+
     return {
       mode: params.mode,
       difficulty: params.difficulty,
@@ -144,6 +192,8 @@ export class AttentionMetricsCollector {
       totalAccuracy,
       averageResponseTimeMs: avgResponse,
       averageResponseVariationMs: variation,
+      errorRate,
+      completionRate,
       completed: params.completed,
       duration,
     }

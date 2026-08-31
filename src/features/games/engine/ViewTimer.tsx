@@ -2,8 +2,6 @@
  * ViewTimer — large countdown display used during memorization phases.
  */
 
-import { useLanguage } from '@/lib/i18n/language-context'
-
 interface ViewTimerProps {
   seconds: number
   title: string
@@ -11,7 +9,6 @@ interface ViewTimerProps {
 }
 
 export function ViewTimer({ seconds, title, subtitle }: ViewTimerProps) {
-  const { t } = useLanguage()
 
   return (
     <div className="flex flex-col items-center text-center">
@@ -22,9 +19,6 @@ export function ViewTimer({ seconds, title, subtitle }: ViewTimerProps) {
       {subtitle && (
         <p className="mt-2 text-lg text-muted-foreground">{subtitle}</p>
       )}
-      <p className="mt-3 text-base text-muted-foreground">
-        {t('take_time')}
-      </p>
     </div>
   )
 }
