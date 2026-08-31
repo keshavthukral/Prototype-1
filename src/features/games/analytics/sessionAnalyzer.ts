@@ -135,6 +135,8 @@ export interface AttentionSessionAnalysis {
   visualSearchAccuracy: number
   pairMatchingAccuracy: number
   ruleSwitchAccuracy: number
+  selectiveAttentionAccuracy: number
+  workingMemoryAccuracy: number
 
   averageResponseTime: number
   errorRate: number
@@ -184,11 +186,25 @@ export function analyzeAttentionSession(
     ? Math.round((pairCorrect / pairChallenges.length) * 100)
     : 0
 
-  // Rule switch accuracy (quick-choice can be used as rule switch proxy)
-  const ruleChallenges = byType.get('quick-choice') ?? []
+  // Rule switch accuracy (rule-switch type)
+  const ruleChallenges = byType.get('rule-switch') ?? []
   const ruleCorrect = ruleChallenges.filter((c) => c.correct).length
   const ruleSwitchAccuracy = ruleChallenges.length > 0
     ? Math.round((ruleCorrect / ruleChallenges.length) * 100)
+    : 0
+
+  // Selective attention accuracy
+  const selectiveChallenges = byType.get('selective-attention') ?? []
+  const selectiveCorrect = selectiveChallenges.filter((c) => c.correct).length
+  const selectiveAttentionAccuracy = selectiveChallenges.length > 0
+    ? Math.round((selectiveCorrect / selectiveChallenges.length) * 100)
+    : 0
+
+  // Working memory accuracy
+  const workingMemoryChallenges = byType.get('working-memory-choice') ?? []
+  const workingMemoryCorrect = workingMemoryChallenges.filter((c) => c.correct).length
+  const workingMemoryAccuracy = workingMemoryChallenges.length > 0
+    ? Math.round((workingMemoryCorrect / workingMemoryChallenges.length) * 100)
     : 0
 
   // Average response time
@@ -217,6 +233,8 @@ export function analyzeAttentionSession(
     visualSearchAccuracy,
     pairMatchingAccuracy,
     ruleSwitchAccuracy,
+    selectiveAttentionAccuracy,
+    workingMemoryAccuracy,
     averageResponseTime,
     errorRate,
     completionRate,

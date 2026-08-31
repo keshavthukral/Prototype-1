@@ -1,14 +1,8 @@
 /**
- * Attention Adventure — 7 short challenges from 8 types.
+ * Attention Adventure — 8 short challenges from varied types.
  *
- * TYPE A: What Comes Next (visual sequences)
- * TYPE B: Find the Different One
- * TYPE C: Target Find (12–20 items)
- * TYPE D: Sequence Completion (A-B-C pattern)
- * TYPE E: Simple Number Pattern
- * TYPE F: Match the Pair
- * TYPE G: Quick Choice
- * TYPE H: Rule Switch
+ * Pattern Completion, Odd One Out, Target Search, Matching Pairs,
+ * Rule Switching, Visual Sequence, Selective Attention, Working Memory.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -40,7 +34,7 @@ import { useLanguage } from '@/lib/i18n/language-context'
 
 type Phase = 'intro' | 'challenge' | 'feedback' | 'final-result' | 'daily-complete'
 
-const TOTAL_CHALLENGES = 7
+const TOTAL_CHALLENGES = 8
 
 // ─── Main Component ─────────────────────────────────────────────
 
@@ -75,6 +69,9 @@ export function AttentionAdventure() {
   const [ruleSwitchIndex, setRuleSwitchIndex] = useState(0)
   const [currentPrompt, setCurrentPrompt] = useState('')
 
+  // Challenges ref — avoids stale closure in beginChallenge
+  const challengesRef = useRef<ChallengeConfig[]>([])
+
   // Session
   const collectorRef = useRef(new AttentionMetricsCollector())
   const telemetryRef = useRef(new TelemetryTracker())
@@ -97,6 +94,11 @@ export function AttentionAdventure() {
     })()
   }, [user?.id])
 
+  // Keep ref in sync with state
+  useEffect(() => {
+    challengesRef.current = challenges
+  }, [challenges])
+
   // ── Helpers ──
   const beginChallenge = useCallback((nextIndex: number) => {
     setIndex(nextIndex)
@@ -109,7 +111,8 @@ export function AttentionAdventure() {
     setTargetFindSelected(new Set())
     setRuleSwitchIndex(0)
 
-    const c = challenges[nextIndex]
+    // Use ref to always read current challenges (avoids stale closure)
+    const c = challengesRef.current[nextIndex]
     if (c?.type === 'rule-switch' && c.ruleChanges) {
       setCurrentPrompt(c.ruleChanges.from)
     } else if (c) {
@@ -118,14 +121,16 @@ export function AttentionAdventure() {
 
     telemetryRef.current.start(difficulty, c?.type ?? 'unknown')
     setPhase('challenge')
-  }, [challenges, difficulty])
+  }, [difficulty])
 
   // ── Start Game ──
   const startGame = () => {
     const pool = getSessionChallenges(difficulty, TOTAL_CHALLENGES)
     setChallenges(pool)
+    challengesRef.current = pool
     setMetrics([])
     collectorRef.current.reset()
+    telemetryRef.current.reset()
     beginChallenge(0)
   }
 
@@ -296,10 +301,9 @@ export function AttentionAdventure() {
         ? 'Well done! Keep practising.'
         : 'Every effort helps. You are doing great.'
 
-  const goBack = () =>
-    phase === 'intro'
-      ? navigate(mode === 'daily' ? '/patient' : '/patient/games')
-      : undefined
+  const goBack = useCallback(() => {
+    navigate(mode === 'daily' ? '/patient' : '/patient/games')
+  }, [navigate, mode])
 
   if (!ready) {
     return (
@@ -320,7 +324,7 @@ export function AttentionAdventure() {
       {phase === 'intro' && (
         <GameIntro
           icon={Grid3X3}
-          title="Pattern & Attention"
+          title="Attention & Pattern Adventure"
           description="Short visual questions. Take your time."
           backLabel={mode === 'daily' ? t('home') : t('activities')}
           onBack={goBack}
@@ -414,7 +418,19 @@ function ChallengeView({
 
       {showHint && (
         <p className="mx-auto mt-4 rounded-xl bg-primary/10 px-5 py-3 text-lg font-medium text-primary">
-          {isOddOneOut ? 'Look carefully at each shape.' : isMatchPair ? 'Tap two cards that go together.' : 'Look for what repeats or changes.'}
+          {challenge.type === 'find-different'
+            ? t('hint_odd_one')
+            : challenge.type === 'match-pair'
+              ? t('hint_match_pair')
+              : challenge.type === 'target-find'
+                ? t('hint_garden_search')
+                : challenge.type === 'rule-switch'
+                  ? t('hint_rule_switch')
+                  : challenge.type === 'visual-sequence'
+                    ? t('hint_visual_sequence')
+                    : challenge.type === 'selective-attention'
+                      ? t('hint_quick_find')
+                      : t('hint_quick_find')}
         </p>
       )}
 
@@ -501,11 +517,17 @@ function ChallengeView({
         </Button>
         <Button variant="ghost" size="lg" className="text-lg" onClick={onSkip}>{t('skip')}</Button>
         <Button size="lg" className="flex-1 text-lg" onClick={onSubmit}
-          disabled={!isMatchPair && !isTargetFind && selectedIndex === null}>
+          disabled={
+            isMatchPair
+              ? !allPairsMatched
+              : isTargetFind
+                ? targetFindSelected.size === 0
+                : selectedIndex === null
+          }>
           {isMatchPair
             ? allPairsMatched ? t('check_answer') : `${matchedPairs.size / 2} / ${challenge.pairs?.length ?? 0} matched`
             : isTargetFind
-              ? `${targetFindSelected.size} selected`
+              ? targetFindSelected.size > 0 ? `${targetFindSelected.size} selected` : t('check_answer')
               : t('check_answer')}
         </Button>
       </div>
@@ -528,7 +550,7 @@ function Feedback({ correct, skipped, last, onNext }: {
         {skipped ? t('thats_okay') : correct ? t('thats_right') : t('nice_try')}
       </h1>
       {!correct && !skipped && (
-        <p className="mt-3 text-xl text-muted-foreground">Keep trying — you are doing well.</p>
+        <p className="mt-3 text-xl text-muted-foreground">{t('nice_try')}</p>
       )}
       <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={onNext}>
         {last ? t('see_results') : t('next_question')}

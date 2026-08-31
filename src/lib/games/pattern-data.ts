@@ -140,12 +140,43 @@ const LEVEL_4: PatternRound[] = [
   },
 ]
 
+// ── Level 5: Advanced sequences ──────────────────────────────
+
+const LEVEL_5: PatternRound[] = [
+  {
+    sequence: ['🔴', '🔵', '🟢', '🟡', '🟣', '🟠', '🔴', '🔵'],
+    answer: '🟢',
+    options: ['🔴', '🔵', '🟢', '🟡', '🟣'],
+  },
+  {
+    sequence: ['⭐', '🌙', '☀️', '🌈', '⚡', '🌟', '⭐', '🌙'],
+    answer: '☀️',
+    options: ['⭐', '🌙', '☀️', '🌈', '⚡'],
+  },
+  {
+    sequence: ['🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '🟥', '🟧'],
+    answer: '🟨',
+    options: ['🟥', '🟧', '🟨', '🟩', '🟦'],
+  },
+  {
+    sequence: ['🌸', '🌺', '🌻', '🌹', '🌷', '🏵️', '🌸', '🌺'],
+    answer: '🌻',
+    options: ['🌸', '🌺', '🌻', '🌹', '🌷'],
+  },
+  {
+    sequence: ['🔺', '🔻', '⬛', '⬜', '💎', '🔶', '🔺', '🔻'],
+    answer: '⬛',
+    options: ['🔺', '🔻', '⬛', '⬜', '💎'],
+  },
+]
+
 /** Patterns indexed by difficulty level */
 export const PATTERNS_BY_LEVEL: Record<DifficultyLevel, PatternRound[]> = {
   1: LEVEL_1,
   2: LEVEL_2,
   3: LEVEL_3,
   4: LEVEL_4,
+  5: LEVEL_5,
 }
 
 /** Number of rounds per difficulty level */
@@ -154,6 +185,7 @@ export const ROUNDS_PER_LEVEL: Record<DifficultyLevel, number> = {
   2: 5,
   3: 5,
   4: 5,
+  5: 5,
 }
 
 /**

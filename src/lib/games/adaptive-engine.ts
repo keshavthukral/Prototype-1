@@ -16,7 +16,7 @@
 
 // ─── Types ────────────────────────────────────────────────────
 
-export type DifficultyLevel = 1 | 2 | 3 | 4
+export type DifficultyLevel = 1 | 2 | 3 | 4 | 5
 
 export interface SessionResult {
   /** Number of correct answers out of total targets */
@@ -67,6 +67,7 @@ export function computeNextDifficulty(
     2: { fast: 20_000, slow: 60_000 },
     3: { fast: 25_000, slow: 90_000 },
     4: { fast: 30_000, slow: 120_000 },
+    5: { fast: 35_000, slow: 150_000 },
   }
 
   // Take the most recent sessions up to the window size
@@ -100,10 +101,9 @@ export function computeNextDifficulty(
   // ── Decision logic ──────────────────────────────────────────
 
   // Strong upward signal: consistent high accuracy, decent speed, few hints
-  if (
-    composite >= compositeUp &&
+  if (composite >= compositeUp &&
     consecutiveStrong >= maxConsecutive &&
-    currentDifficulty < 4
+    currentDifficulty < 5
   ) {
     const newLevel = (currentDifficulty + 1) as DifficultyLevel
     return {

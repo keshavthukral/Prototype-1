@@ -18,25 +18,30 @@ export interface DailyPerformance {
     delayedRecallAccuracy: number | null
     spatialAccuracy: number | null
     sequenceAccuracy: number | null
-    averageResponseTime: number
+    associationAccuracy: number | null
+    responseTime: number
   }
 
   attention: {
     visualSearchAccuracy: number
     patternAccuracy: number
     matchingAccuracy: number
-    averageResponseTime: number
+    ruleSwitchAccuracy: number
+    selectiveAttentionAccuracy: number
+    workingMemoryAccuracy: number
+    responseTime: number
   }
 
   engagement: {
     gamesCompleted: number
     hintsUsed: number
-    skippedActivities: number
+    skippedChallenges: number
   }
 
-  routine: {
-    remindersCompleted: number
-    remindersPostponed: number
+  reminders: {
+    completed: number
+    postponed: number
+    pending: number
   }
 }
 
@@ -51,7 +56,7 @@ export function buildDailyPerformance(params: {
   attentionSession: AttentionSessionAnalysis | null
   gamesCompleted: number
   hintsUsed: number
-  skippedActivities: number
+  skippedChallenges: number
   remindersCompleted: number
   remindersPostponed: number
 }): DailyPerformance {
@@ -65,25 +70,30 @@ export function buildDailyPerformance(params: {
       delayedRecallAccuracy: memorySession?.delayedRecallAccuracy ?? null,
       spatialAccuracy: memorySession?.spatialAccuracy ?? null,
       sequenceAccuracy: memorySession?.sequenceAccuracy ?? null,
-      averageResponseTime: memorySession?.averageResponseTime ?? 0,
+      associationAccuracy: null,
+      responseTime: memorySession?.averageResponseTime ?? 0,
     },
 
     attention: {
       visualSearchAccuracy: attentionSession?.visualSearchAccuracy ?? 0,
       patternAccuracy: attentionSession?.patternAccuracy ?? 0,
       matchingAccuracy: attentionSession?.pairMatchingAccuracy ?? 0,
-      averageResponseTime: attentionSession?.averageResponseTime ?? 0,
+      ruleSwitchAccuracy: attentionSession?.ruleSwitchAccuracy ?? 0,
+      selectiveAttentionAccuracy: attentionSession?.selectiveAttentionAccuracy ?? 0,
+      workingMemoryAccuracy: attentionSession?.workingMemoryAccuracy ?? 0,
+      responseTime: attentionSession?.averageResponseTime ?? 0,
     },
 
     engagement: {
       gamesCompleted: params.gamesCompleted,
       hintsUsed: params.hintsUsed,
-      skippedActivities: params.skippedActivities,
+      skippedChallenges: params.skippedChallenges,
     },
 
-    routine: {
-      remindersCompleted: params.remindersCompleted,
-      remindersPostponed: params.remindersPostponed,
+    reminders: {
+      completed: params.remindersCompleted,
+      postponed: params.remindersPostponed,
+      pending: 0,
     },
   }
 }
@@ -95,6 +105,6 @@ export function buildDailyPerformance(params: {
 export function calculateEngagementScore(performance: DailyPerformance): number {
   const completionBonus = performance.engagement.gamesCompleted * 20
   const hintPenalty = Math.min(performance.engagement.hintsUsed * 5, 30)
-  const skipPenalty = performance.engagement.skippedActivities * 15
+  const skipPenalty = performance.engagement.skippedChallenges * 15
   return Math.max(0, Math.min(100, completionBonus - hintPenalty - skipPenalty))
 }

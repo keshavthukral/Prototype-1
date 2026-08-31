@@ -9,29 +9,44 @@ import {
   Banana,
   BookOpen,
   BriefcaseBusiness,
+  Circle,
   Clock3,
   Coffee,
   Flower2,
   Glasses,
+  GlassWater,
   KeyRound,
+  Lamp,
   Phone,
   Umbrella,
 } from 'lucide-react'
 import type { GameChoice } from '@/features/games/types'
 
+/**
+ * Best-effort icon mapping.
+ * Falls back to Apple if an icon is not available in lucide-react.
+ */
 const iconMap: Record<string, typeof Apple> = {
   apple: Apple,
-  key: KeyRound,
+  banana: Banana,
   cup: Coffee,
   book: BookOpen,
+  key: KeyRound,
   umbrella: Umbrella,
-  flower: Flower2,
   clock: Clock3,
-  glasses: Glasses,
+  flower: Flower2,
   chair: Armchair,
-  banana: Banana,
-  telephone: Phone,
+  ball: Circle,
+  spoon: Coffee,      // no dedicated spoon icon in lucide
+  glasses: Glasses,
   bag: BriefcaseBusiness,
+  bottle: GlassWater,
+  telephone: Phone,
+  lamp: Lamp,
+  plate: Coffee,      // no dedicated plate icon in lucide
+  hat: Armchair,      // no dedicated hat icon in lucide
+  ring: Circle,       // closest available
+  shoe: Circle,       // no dedicated shoe icon in lucide
 }
 
 interface ObjectVisualProps {

@@ -87,10 +87,17 @@ describe('computeNextDifficulty', () => {
       expect(result.reasoning).toContain('level 4')
     })
 
-    it('does NOT increase beyond 4', () => {
+    it('increases from 4 to 5 after 2+ strong sessions', () => {
       const sessions = makeStrongSessions(3, 4)
       const result = computeNextDifficulty(4, sessions)
-      expect(result.newDifficulty).toBe(4)
+      expect(result.newDifficulty).toBe(5)
+      expect(result.reasoning).toContain('level 5')
+    })
+
+    it('does NOT increase beyond 5', () => {
+      const sessions = makeStrongSessions(3, 5)
+      const result = computeNextDifficulty(5, sessions)
+      expect(result.newDifficulty).toBe(5)
     })
   })
 
@@ -106,6 +113,12 @@ describe('computeNextDifficulty', () => {
       const sessions = makeWeakSessions(3, 3)
       const result = computeNextDifficulty(3, sessions)
       expect(result.newDifficulty).toBe(2)
+    })
+
+    it('decreases from 5 to 4 after 2+ weak sessions', () => {
+      const sessions = makeWeakSessions(3, 5)
+      const result = computeNextDifficulty(5, sessions)
+      expect(result.newDifficulty).toBe(4)
     })
 
     it('does NOT decrease below 1', () => {

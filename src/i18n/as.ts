@@ -7,12 +7,75 @@ export const as: PatientTranslations = {
   app_name: 'মনৰ সাথী', select_language: 'আপোনাৰ ভাষা বাছক', select_language_label: '{language} বাছক', hear_again: 'আকৌ শুনক', home: 'মূল পৃষ্ঠা', games: 'খেলসমূহ', reminders: 'সোঁৱৰণী', memories: 'স্মৃতিসমূহ', main_navigation: 'মূল দিশনিৰ্ণয়', patient_tools: 'ৰোগীৰ সুবিধাসমূহ', back: 'পিছলৈ', next: 'পৰৱৰ্তী', loading: 'লোড হৈ আছে…', loading_activity: 'কাৰ্যকলাপ লোড হৈ আছে…', activities_label: 'কাৰ্যকলাপ',
   games_title: 'এটা কাৰ্যকলাপ বাছক', games_intro: 'লাহে লাহে কৰক। যিকোনো এটা কাৰ্যকলাপ খেলিব পাৰে।', four_gentle_activities: 'চিনাকি বস্তুৰে চাৰিটা সহজ কাৰ্যকলাপ।', six_gentle_questions: 'আৰ্হি আৰু আকৃতিৰে ছটা সহজ প্ৰশ্ন।', start_activity: 'কাৰ্যকলাপ আৰম্ভ কৰক',
   exit_title: 'কাৰ্যকলাপ এৰিব নেকি?', exit_description: 'বৰ্তমানৰ ৰাউণ্ডটো সংৰক্ষণ নহ’ব।', keep_playing: 'খেলি থাকক', leave_activity: 'কাৰ্যকলাপ এৰক',
-  round_of: 'ৰাউণ্ড {current} / {total}', question_of: 'প্ৰশ্ন {current} / {total}', remember_later: 'পিছৰ বাবে এইবোৰ মনত ৰাখক', see_again_later: 'শেষৰ ফালে এই বস্তুবোৰ আকৌ দেখা পাব।', remember_order: 'ক্ৰমটো মনত ৰাখক', remember_locations: 'প্ৰতিটো বস্তুৰ ঠাই মনত ৰাখক', remember_objects: 'এই বস্তুবোৰ মনত ৰাখক', take_time: 'লাহে লাহে মন দি চাওক।', just_seen: 'এইমাত্ৰ কোনবোৰ বস্তু দেখিছিল?', seen_earlier: 'আগতে কোনবোৰ বস্তু দেখিছিল?', memory_hint: 'বস্তুবোৰৰ কথা ভাবক আৰু সময় লওক।', hint: 'ইংগিত', submit_answer: 'উত্তৰ দিয়ক', order_instruction: 'মনত ৰখা ক্ৰমত বস্তুবোৰ সজাওক', order_help: 'ক্ৰম অনুসৰি বস্তু বাছক, অথবা নম্বৰ দিয়া ঠাইলৈ টানি নিয়ক।', choose_object: 'এটা বস্তু বাছক', check_order: 'ক্ৰম পৰীক্ষা কৰক', where_was: '{object} ক’ত আছিল?', choose_place: 'এটা ঠাই বাছক।', try_another_place: 'আন এটা ঠাই চেষ্টা কৰক।', position: 'ঠাই {number}', selected: 'নিৰ্বাচিত', good_effort: 'ভাল চেষ্টা', remembered_result: '{total} টাৰ ভিতৰত {correct} টা মনত ৰাখিলে', positions_result: '{total} টাৰ ভিতৰত {correct} টা ঠাই শুদ্ধ', found_place: 'আপুনি শুদ্ধ ঠাইটো বিচাৰি পালে', next_round: 'পৰৱৰ্তী ৰাউণ্ড', see_results: 'ফলাফল চাওক', activity_complete: 'কাৰ্যকলাপ সম্পূৰ্ণ', accuracy: 'শুদ্ধতা', objects_remembered: 'মনত ৰখা বস্তু', average_response: 'গড় উত্তৰ সময়', seconds_short: '{count} ছেকেণ্ড', count_of: '{current} / {total}', rounds_completed: 'সম্পূৰ্ণ ৰাউণ্ড', continue_pattern: 'আৰ্হি আৰু মনোযোগলৈ যাওক', back_activities: 'কাৰ্যকলাপলৈ উভতি যাওক', play_again: 'আকৌ খেলক', details_save_later: 'কাৰ্যকলাপ সম্পূৰ্ণ। কিছুমান তথ্য পিছত সংৰক্ষণ হ’ব।',
-  pattern_loading: 'কাৰ্যকলাপ লোড হৈ আছে…', pattern_prompt_default: 'মন দি চাওক আৰু পৰৱৰ্তীটো বাছক।', what_comes_next: 'পৰৱৰ্তীটো কি?', which_shape_next: 'পৰৱৰ্তী আকৃতিটো কি?', which_missing: 'কোনটো বস্তু নাই?', find_different: 'বেলেগটো বিচাৰি উলিয়াওক।', look_repeats: 'কি পুনৰাবৃত্তি বা সলনি হৈছে চাওক।', look_shapes: 'প্ৰতিটো আকৃতি মন দি চাওক।', visual_sequence: 'চকুৰে দেখা ক্ৰম', answer_label: 'উত্তৰ {number}: {answer}', skip: 'এৰি যাওক', check_answer: 'উত্তৰ পৰীক্ষা কৰক', thats_okay: 'একো নহয়', thats_right: 'ঠিক হৈছে', nice_try: 'ভাল চেষ্টা', answer_is: 'উত্তৰটো হৈছে {answer}।', next_question: 'পৰৱৰ্তী প্ৰশ্ন', correct_patterns: 'শুদ্ধ আৰ্হি', questions_completed: 'সম্পূৰ্ণ প্ৰশ্ন', finish_today: 'আজিৰ কাৰ্যকলাপ শেষ কৰক', daily_complete: 'আজিৰ কাৰ্যকলাপ সম্পূৰ্ণ', daily_complete_message: 'আজি অংশ লোৱাৰ বাবে বহুত ভাল লাগিল।', return_home: 'মূল পৃষ্ঠালৈ যাওক',
+  round_of: 'ৰাউণ্ড {current} / {total}', question_of: 'প্ৰশ্ন {current} / {total}', remember_later: 'পিছৰ বাবে এইবোৰ মনত ৰাখক', see_again_later: 'শেষৰ ফালে এই বস্তুবোৰ আকৌ দেখা পাব।', remember_order: 'ক্ৰমটো মনত ৰাখক', remember_locations: 'প্ৰতিটো বস্তুৰ ঠাই মনত ৰাখক', remember_objects: 'এই বস্তুবোৰ মনত ৰাখক', take_time: 'লাহে লাহে মন দি চাওক।', just_seen: 'এইমাত্ৰ কোনবোৰ বস্তু দেখিছিল?', seen_earlier: 'আগতে কোনবোৰ বস্তু দেখিছিল?',  memory_hint: 'আপুনি যিবোৰ দেখিলে তাৰ কথা ভাবক। সময় লওক।',
+  hint_object_recall: 'প্ৰতিটো বস্তু চাওক। কিছু একে দেখা যাব পাৰে — আপুনি যিবোৰ মনত পেলাইছে সিবোৰলৈ মন দিয়ক।',
+  hint_spatial: 'বৰ্ডটো মনত চিত্ৰিত কৰক। প্ৰতিটো বস্তু ক’ত ৰাখা হৈছিল ভাবক।',
+  hint_sequence: 'সোমানে সোমানে ভাবক। আপুনি প্ৰথমে কি দেখিলে, তাৰ পিছত কি, আৰু শেষত কি?',
+  hint_association: 'কোন বস্তুবোৰ প্ৰাকৃতিকভাৱে একেলগে যুক্ত ভাবক।',
+  hint_personal: 'ছবিত থকা ব্যক্তিৰ কথা আৰু আপুনি তাৰ বিষয়ে জানে তাৰ কথা ভাবক।',
+  hint_delayed: 'ই আগতে দেখোৱা হৈছিল। মনত চিত্ৰিত কৰিবলৈ চেষ্টা কৰক।',
+  hint_garden_search: 'দৃশ্যটো লাহে লাহে চাওক। নিৰ্দিষ্ট আইটেমবোৰ বিচাৰি উলিয়াওক।',
+  hint_find_changed: 'আপুনি যি মনত পেলাইছে আৰু আপুনি যি দেখি আছে তাৰ তুলনা কৰক। কি সলনি হৈছে?',
+  hint_odd_one: 'প্ৰতিটো আইটেম মন দি চাওক। এটা আনবোৰৰ পৰা সামান্য ভিন্ন।',
+  hint_match_pair: 'কাৰ্ড ক’ত আছিল মনত ৰাখক। দুটা একেলগে যুক্ত কাৰ্ড মিলাওক।',
+  hint_rule_switch: 'বৰ্তমানৰ নিয়ম পালন কৰক। ই কেতিয়া সলনি হয় শুনক।',
+  hint_visual_sequence: 'ক্ৰমটো মনত চিত্ৰিত কৰক। ইয়াৰ আগত আৰু পিছত কি আছিল ভাবক।',
+  hint_quick_find: 'সকলো আইটেম চাওক। নিৰ্দিষ্ট বস্তুটো বিচাৰি উলিয়াওক।', hint: 'ইংগিত', submit_answer: 'উত্তৰ দিয়ক',
+  remember_sequence: 'ক্ৰমটো মন দি চাওক।',
+  remember_pairs_title: 'এই সম্পৰ্কবোৰ মনত ৰাখক।',
+  order_instruction: 'আপুনি দেখা ক্ৰমত বস্তুবোৰ সজাওক।',
+  order_help: 'প্ৰতিটো বস্তু শুদ্ধ ক্ৰমত টেপ কৰক, প্ৰথমৰ পৰা শেষলৈ।', choose_object: 'এটা বস্তু বাছক', check_order: 'ক্ৰম পৰীক্ষা কৰক', where_was: '{object} ক’ত আছিল?', choose_place: 'এটা ঠাই বাছক।', try_another_place: 'আন এটা ঠাই চেষ্টা কৰক।', position: 'ঠাই {number}', selected: 'নিৰ্বাচিত', good_effort: 'ভাল চেষ্টা', remembered_result: '{total} টাৰ ভিতৰত {correct} টা মনত ৰাখিলে', positions_result: '{total} টাৰ ভিতৰত {correct} টা ঠাই শুদ্ধ', found_place: 'আপুনি শুদ্ধ ঠাইটো বিচাৰি পালে', next_round: 'পৰৱৰ্তী ৰাউণ্ড', see_results: 'ফলাফল চাওক', activity_complete: 'কাৰ্যকলাপ সম্পূৰ্ণ', accuracy: 'শুদ্ধতা', objects_remembered: 'মনত ৰখা বস্তু', average_response: 'গড় উত্তৰ সময়', seconds_short: '{count} ছেকেণ্ড', count_of: '{current} / {total}', rounds_completed: 'সম্পূৰ্ণ ৰাউণ্ড', continue_pattern: 'আৰ্হি আৰু মনোযোগলৈ যাওক', back_activities: 'কাৰ্যকলাপলৈ উভতি যাওক', play_again: 'আকৌ খেলক', details_save_later: 'কাৰ্যকলাপ সম্পূৰ্ণ। কিছুমান তথ্য পিছত সংৰক্ষণ হ’ব।',
+  pattern_loading: 'কাৰ্যকলাপ লোড হৈ আছে…', pattern_prompt_default: 'মন দি চাওক আৰু পৰৱৰ্তীটো বাছক।', what_comes_next: 'পৰৱৰ্তীটো কি?', which_shape_next: 'পৰৱৰ্তী আকৃতিটো কি?', which_missing: 'কোনটো বস্তু নাই?', find_different: 'বেলেগটো বিচাৰি উলিয়াওক।',  look_repeats: 'আৰ্হিত কি পুনৰাবৃত্তি বা সলনি হৈছে চাওক।', look_shapes: 'প্ৰতিটো আকৃতি মন দি চাওক।', visual_sequence: 'চকুৰে দেখা ক্ৰম', answer_label: 'উত্তৰ {number}: {answer}', skip: 'এৰি যাওক', check_answer: 'উত্তৰ পৰীক্ষা কৰক', thats_okay: 'একো নহয়', thats_right: 'ঠিক হৈছে', nice_try: 'ভাল চেষ্টা', answer_is: 'উত্তৰটো হৈছে {answer}।', next_question: 'পৰৱৰ্তী প্ৰশ্ন', correct_patterns: 'শুদ্ধ আৰ্হি', questions_completed: 'সম্পূৰ্ণ প্ৰশ্ন', finish_today: 'আজিৰ কাৰ্যকলাপ শেষ কৰক', daily_complete: 'আজিৰ কাৰ্যকলাপ সম্পূৰ্ণ', daily_complete_message: 'আজি অংশ লোৱাৰ বাবে বহুত ভাল লাগিল।', return_home: 'মূল পৃষ্ঠালৈ যাওক',
   object_apple: 'আপেল', object_banana: 'কল', object_cup: 'কাপ', object_book: 'কিতাপ', object_key: 'চাবি', object_umbrella: 'ছাতি', object_clock: 'ঘড়ী', object_flower: 'ফুল', object_chair: 'চকী', object_ball: 'বল', object_spoon: 'চামুচ', object_glasses: 'চশমা', object_bag: 'বেগ', object_bottle: 'বটল', object_telephone: 'টেলিফোন',
   reminders_title: 'মোৰ সোঁৱৰণী', reminders_prepared: 'আপোনাৰ যত্ন লওঁতাই এই সোঁৱৰণীবোৰ তৈয়াৰ কৰিছে।', works_offline: 'অফলাইনতো কাম কৰে', today: 'আজি', completed: 'সম্পূৰ্ণ', no_pending_reminders: 'এতিয়া কোনো সোঁৱৰণী বাকী নাই।', no_completed_reminders: 'সম্পূৰ্ণ সোঁৱৰণী ইয়াত দেখা যাব।', medicine: 'ঔষধ', hydration: 'পানী', meal: 'আহাৰ', walk: 'খোজ কঢ়া', family_call: 'পৰিয়াললৈ ফোন', daily_activity: 'দৈনিক কাৰ্যকলাপ', taken: 'খোৱা হ’ল', done: 'হ’ল', remind_me_later: 'পিছত মনত পেলাব', remind_again_at: '{time} বজাত আকৌ মনত পেলাব', remind_in: 'কিমান সময় পিছত:', minutes: '{count} মিনিট', one_hour: '১ ঘণ্টা', reminder_saved_later: 'এই ডিভাইচত সংৰক্ষণ হ’ল। পিছত সমন্বয় হ’ব।', reminder_update_failed: 'সোঁৱৰণী সলনি কৰিব পৰা নগ’ল। আকৌ চেষ্টা কৰক।',
   memory_book: 'মোৰ স্মৃতিসমূহ', memory_book_instruction: 'আপোনাৰ আপোন মানুহ, ঠাই আৰু মুহূৰ্ত।', no_memories: 'এতিয়াও স্মৃতি নাই।', viewing_cached: 'সংৰক্ষিত স্মৃতি চাই আছে', all_memories: 'সকলো স্মৃতি', show_one: 'এটাকৈ চাওক', previous: 'আগৰটো', next_memory: 'পৰৱৰ্তীটো', memory_counter: '{current} / {total}', hear_memory: 'এই স্মৃতিটো শুনক', view_all_memories: 'সকলো স্মৃতি চাওক',
   progress_title: 'আজিৰ অগ্ৰগতি', progress_intro: 'আজি আপুনি কি সম্পূৰ্ণ কৰিলে তাৰ সহজ তালিকা।', memory_activity: 'স্মৃতি অনুশীলন', pattern_activity: 'আৰ্হি আৰু মনোযোগ', reminders_progress: 'সোঁৱৰণী {completed}/{total}', completed_mark: 'সম্পূৰ্ণ', not_yet: 'এতিয়াও নহয়', progress_complete: 'আপুনি আজিৰ কাৰ্যকলাপ সম্পূৰ্ণ কৰিলে।', progress_encouragement: 'আপুনি অংশ লোৱা প্ৰতিটো কাৰ্যকলাপেই মূল্যৱান।',
   checkin_title: 'দৈনিক খবৰ', checkin_q1: 'আজি আপোনাৰ মন কেনেকুৱা?', checkin_q2: 'আজি আপোনাৰ শক্তি কেনেকুৱা?', checkin_q3: 'আপুনি কাৰোবাৰ লগত কথা পাতিব বিচাৰে নেকি?', mood_very_good: 'খুব ভাল', mood_good: 'ভাল', mood_okay: 'ঠিকেই আছে', mood_not_good: 'ইমান ভাল নহয়', energy_good: 'ভাল', energy_okay: 'ঠিকেই আছে', energy_low: 'কম', contact_no: 'নালাগে, মই ঠিকেই আছোঁ', contact_yes: 'হয়, মোৰ যত্ন লওঁতাজনৰ সৈতে যোগাযোগ কৰক', saving: 'সংৰক্ষণ হৈ আছে…', checkin_thanks: 'খবৰ দিয়াৰ বাবে ধন্যবাদ।', saved_device: 'আপোনাৰ উত্তৰ এই ডিভাইচত সংৰক্ষণ হ’ল।', contact_caregiver: 'যত্ন লওঁতাৰ সৈতে যোগাযোগ কৰক', back_home: 'মূল পৃষ্ঠালৈ', checkin_save_error: 'আপোনাৰ উত্তৰ সংৰক্ষণ কৰিব পৰা নগ’ল। আকৌ চেষ্টা কৰক।',
-  help_title: 'আমি কেনেকৈ সহায় কৰিব পাৰোঁ?', choose_option: 'তলৰ এটা বিকল্প বাছক।', call_someone: 'কাৰোবালৈ ফোন কৰক', call_caregiver: 'যত্ন লওঁতালৈ ফোন', call_family: 'পৰিয়ালৰ সদস্যলৈ ফোন', emergency_services: 'জৰুৰীকালীন সেৱা', emergency_subtitle: 'ব্যৱস্থা কৰি থোৱা জৰুৰী নম্বৰলৈ ফোন কৰক', call: 'ফোন কৰক', copy_number: 'নম্বৰ কপি কৰক', copied: 'কপি হ’ল', caregiver_call_question: 'ৰাহুলে আপোনাক ফোন কৰাটো বিচাৰে নেকি?', support_not_emergency: 'ই এটা সহায় অনুৰোধ পঠিয়ায়। ই জৰুৰীকালীন সংকেত নহয়।', ask_contact: 'যত্ন লওঁতাক মোক ফোন কৰিবলৈ কওক', request_sent: 'অনুৰোধ পঠিওৱা হ’ল', request_saved: 'আপোনাৰ অনুৰোধ সংৰক্ষণ হ’ল। সমন্বয় হ’লে ৰাহুলে জানিব।', request_saved_sync: 'আপোনাৰ অনুৰোধ সংৰক্ষণ হ’ল। এপটো সমন্বয় হ’লে ৰাহুলে দেখিব।', request_failed: 'অনুৰোধ সংৰক্ষণ কৰিব পৰা নগ’ল। আকৌ চেষ্টা কৰক।', copy_failed: 'এই নম্বৰটো কপি কৰক: {number}',
+  help_title: 'আমি কেনেকৈ সহায় কৰিব পাৰোঁ?', choose_option: 'তলৰ এটা বিকল্প বাছক।', call_someone: 'কাৰোবালৈ ফোন কৰক', call_caregiver: 'যত্ন লওঁতালৈ ফোন', call_family: 'পৰিয়ালৰ সদস্যলৈ ফোন', emergency_services: 'জৰুৰীকালীন সেৱা', emergency_subtitle: 'ব্যৱস্থা কৰি থোৱা জৰুৰী নম্বৰলৈ ফোন কৰক', call: 'ফোন কৰক', copy_number: 'নম্বৰ কপি কৰক', copied: 'কপি হ’ল', caregiver_call_question: 'ৰাহুলে আপোনাক ফোন কৰাটো বিচাৰে নেকি?', support_not_emergency: 'ই এটা সহায় অনুৰোধ পঠিয়ায়। ই জৰুৰীকালীন সংকেত নহয়।', ask_contact: 'যত্ন লওঁতাক মোক ফোন কৰিবলৈ কওক', request_sent: 'অনুৰোধ পঠিওৱা হ’ল', request_saved: 'আপোনাৰ অনুৰোধ সংৰক্ষণ হ’ল। সমন্বয় হ’লে ৰাহুলে জানিব।', request_saved_sync: 'আপোনাৰ অনুৰোধ সংৰক্ষণ হ’ল। এপটো সমন্বয় হ’লে ৰাহুলে দেখিব।', request_failed: 'অনুৰোধ সংৰক্ষণ কৰিব পৰা নগ’ল। আকৌ চেষ্টা কৰক।',  copy_failed: 'এই নম্বৰটো কপি কৰক: {number}',
+
+  // Scene names for screen readers
+  scene_market_basket: 'বজাৰৰ ঝুড়ি',
+  scene_where_did_it_go: 'ই ক’ত গ’ল?',
+  scene_morning_routine: 'পুৱাৰ কাম',
+  scene_family_connection: 'পৰিয়াল সম্পৰ্ক',
+  scene_pairs_and_connections: 'জোৰা আৰু সম্পৰ্ক',
+  scene_remember_for_later: 'পিছৰ বাবে মনত ৰাখক',
+  // Attention scene names
+  scene_garden_search: 'বাগিচাত বিচাৰক',
+  scene_find_what_changed: 'কি সলনি হ’ল বিচাৰক',
+  scene_odd_one_out: 'বেলেগটো বিচাৰক',
+  scene_matching_pairs: 'জোৰা মিলাওক',
+  scene_follow_the_rule: 'নিয়ম পালন কৰক',
+  scene_complete_the_story: 'কাহানী সম্পূৰ্ণ কৰক',
+  scene_quick_find: 'দ্ৰুত বিচাৰক',
+
+  // Memory Journey — Association Recall
+  association_instruction: 'এইবোৰ একেলগে যুক্ত।',
+  association_question: '{object}ৰ লগত কি যুক্ত?',
+  association_remember_pairs: 'এই জোৰাবোৰ মনত ৰাখক।',
+
+  // Memory Journey — Stage labels
+  stage_object_recall: 'বস্তু মনত ৰোৱা',
+  stage_spatial_memory: 'স্থানিক স্মৃতি',
+  stage_sequence_memory: 'ক্ৰম স্মৃতি',
+  stage_association: 'সম্পৰ্ক',
+  stage_personal_memory: 'ব্যক্তিগত স্মৃতি',
+  stage_delayed_recall: 'পিছৰ স্মৃতি',
+
+  // Attention — New challenge types
+  visual_sequence_instruction: 'ক্ৰমটো মন দি চাওক।',
+  visual_sequence_question: '{position}টো কি আছিল?',
+  visual_sequence_after: '{object}ৰ পিছত কোনটো আছিল?',
+  selective_attention_instruction: 'কেৱল {target}টো টেপ কৰক।',
+  selective_attention_distractors: 'আন কোনো আইটেম টেপ নকৰিব।',
+  working_memory_instruction: 'মনত ৰাখক: {item} = হয়।',
+  working_memory_question: 'কোন বস্তুৰ অৰ্থ হয়?',
+
+  // Memory Journey descriptions
+  memory_journey_desc: 'মনত ৰাখিবলৈ ছটা সহজ কাৰ্যকলাপ।',
+  attention_adventure_desc: 'চকুৰে দেখা সানক্ষিপ্ত প্ৰশ্ন। লাহে লাহে কৰক।',
+
+  // Association pair feedback
+  association_correct: 'ঠিক জোৰাটো।',
+  association_incorrect: 'নহয় — উত্তৰটো হৈছে {answer}।',
 }

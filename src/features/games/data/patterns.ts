@@ -34,6 +34,14 @@ const byDifficulty: Record<DifficultyLevel, PatternQuestionConfig[]> = {
     { id: 'missing-4', type: 'missing', prompt: 'Which item is missing?', sequence: ['★', '☾', '●', '◆', '?', '●', '◆'], missingIndex: 4, answer: '☾', options: ['★', '☾', '●', '◆'] },
     { id: 'attention-4', type: 'attention', prompt: 'Find the different one.', sequence: [], answer: '◆', options: ['●', '●', '●', '●', '●', '●', '●', '●', '●', '◆', '●', '●'] },
   ],
+  5: [
+    { id: 'alt-5', type: 'alternating', prompt: 'What comes next?', sequence: ['◆', '●', '■', '▲', '◆', '●', '■', '▲', '◆'], answer: '●', options: ['◆', '●', '■', '▲'] },
+    { id: 'repeat-5', type: 'repetition', prompt: 'What comes next?', sequence: ['●', '▲', '■', '◆', '★', '●', '▲', '■'], answer: '◆', options: ['●', '▲', '■', '◆', '★'] },
+    { id: 'number-5', type: 'number', prompt: 'What comes next?', sequence: ['1', '4', '9', '16'], answer: '25', options: ['20', '25', '36', '16'] },
+    { id: 'shape-5', type: 'shape', prompt: 'Which shape comes next?', sequence: ['○', '◐', '●', '◐', '○', '◐', '●'], answer: '◐', options: ['○', '◐', '●', '◇'] },
+    { id: 'missing-5', type: 'missing', prompt: 'Which item is missing?', sequence: ['★', '☾', '●', '◆', '?', '★', '☾', '●'], missingIndex: 4, answer: '◆', options: ['★', '☾', '●', '◆'] },
+    { id: 'attention-5', type: 'attention', prompt: 'Find the different one.', sequence: [], answer: '◆', options: ['●', '●', '●', '●', '●', '●', '●', '●', '●', '●', '●', '◆', '●', '●'] },
+  ],
 }
 
 export function getPatternQuestions(difficulty: DifficultyLevel): PatternQuestionConfig[] {

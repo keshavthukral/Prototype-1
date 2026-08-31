@@ -1,11 +1,12 @@
 /**
- * Memory Journey — 5-round memory game.
+ * Memory Journey — 6-stage memory activity.
  *
- * Round 1: Visual Object Recall — show objects, recall from options
- * Round 2: Spatial Memory — show objects on grid, recall positions (2-3 questions)
- * Round 3: Sequence Memory — show sequence, reconstruct order
- * Round 4: Personal Memory — show family photo, identify person
- * Round 5: Delayed Recall — recall items shown at session start
+ * Stage 1: Object Recall — show objects, recall from options
+ * Stage 2: Spatial Memory — show objects on grid, recall positions
+ * Stage 3: Sequence Memory — show sequence, reconstruct order
+ * Stage 4: Association Recall — show paired information, recall associations
+ * Stage 5: Personal Memory — show family photo, identify person
+ * Stage 6: Delayed Recall — recall items shown at session start
  *
  * Internal scoring uses the scoring engine — never shown to the patient.
  */
@@ -33,6 +34,7 @@ import type {
   ObjectRecallMetric,
   SpatialMemoryMetric,
   OrderMemoryMetric,
+  AssociationRecallMetric,
   PersonalMemoryMetric,
   DelayedRecallMetric,
 } from '@/features/games/metrics/types'
@@ -43,6 +45,8 @@ import {
   sequenceLength,
   viewSeconds as getViewSeconds,
   spatialQuestions,
+  buildAssociationQuestion,
+  type AssociationQuestion,
 } from '@/features/games/data/objects'
 import {
   getPersonalMemoryCards,
@@ -63,13 +67,14 @@ import { useLanguage } from '@/lib/i18n/language-context'
 
 // ─── Constants ──────────────────────────────────────────────────
 
-const TOTAL_ROUNDS = 5
+const TOTAL_ROUNDS = 6
 
-type RoundType = 'visual-recall' | 'spatial' | 'order' | 'personal' | 'delayed'
+type RoundType = 'visual-recall' | 'spatial' | 'order' | 'association' | 'personal' | 'delayed'
 const ROUND_TYPES: RoundType[] = [
   'visual-recall',
   'spatial',
   'order',
+  'association',
   'personal',
   'delayed',
 ]
@@ -155,6 +160,9 @@ export function MemoryJourney() {
     correctAnswer: string
   } | null>(null)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
+
+  // Association recall
+  const [associationQuestion, setAssociationQuestion] = useState<AssociationQuestion | null>(null)
 
   // Overall results
   const [totalCorrect, setTotalCorrect] = useState(0)
@@ -288,7 +296,18 @@ export function MemoryJourney() {
           break
         }
 
+        case 'association': {
+          setAssociationQuestion(null)
+          const aq = buildAssociationQuestion(difficulty)
+          if (aq) {
+            setAssociationQuestion(aq)
+          }
+          beginTask()
+          break
+        }
+
         case 'personal': {
+          setPersonalQuestion(null)
           const cards = getPersonalMemoryCards()
           if (cards.length > 0) {
             const card = cards[Math.floor(Math.random() * cards.length)]
@@ -327,6 +346,13 @@ export function MemoryJourney() {
       return next
     })
   }
+
+  // Reset selectedAnswer when entering a new stage
+  useEffect(() => {
+    if (phase === 'task') {
+      setSelectedAnswer(null)
+    }
+  }, [phase, round])
 
   const addToOrder = (item: GameChoice) => {
     telemetryRef.current.recordInteraction()
@@ -381,15 +407,15 @@ export function MemoryJourney() {
       incorrectSelections: score.falseSelections,
       totalTargets: score.targetsShown,
       responseTimeMs: performance.now() - taskStartedAt.current,
-      timeToFirstInteractionMs: telemetryRef.current['firstInteractionAt']
-        ? (telemetryRef.current['firstInteractionAt'] as number) - taskStartedAt.current
+      timeToFirstInteractionMs: telemetryRef.current.getFirstInteractionAt() !== null
+        ? telemetryRef.current.getFirstInteractionAt()! - taskStartedAt.current
         : performance.now() - taskStartedAt.current,
       hints,
       accuracy: score.accuracy,
       skipped: false,
       selectionChanges: changes,
-      hesitationDurationMs: telemetryRef.current['firstInteractionAt']
-        ? (telemetryRef.current['firstInteractionAt'] as number) - taskStartedAt.current
+      hesitationDurationMs: telemetryRef.current.getFirstInteractionAt() !== null
+        ? telemetryRef.current.getFirstInteractionAt()! - taskStartedAt.current
         : 0,
     }
 
@@ -509,6 +535,37 @@ export function MemoryJourney() {
       '',
       score.correctPositions,
       score.totalPositions,
+    )
+  }
+
+  // ── Submit Association Recall ──
+  const submitAssociation = () => {
+    if (!associationQuestion) return
+    const isCorrect = selectedAnswer === associationQuestion.correctAnswer
+    const responseTimeMs = performance.now() - taskStartedAt.current
+
+    const metric: AssociationRecallMetric = {
+      round: round + 1,
+      roundType: 'association-recall',
+      pairsShown: associationQuestion.pairs.length,
+      correctAnswer: isCorrect,
+      responseTimeMs,
+      timeToFirstInteractionMs: telemetryRef.current.getFirstInteractionAt() !== null
+        ? telemetryRef.current.getFirstInteractionAt()! - taskStartedAt.current
+        : performance.now() - taskStartedAt.current,
+      hints,
+      accuracy: isCorrect ? 100 : 0,
+      skipped: false,
+      selectionChanges: changes,
+      hesitationDurationMs: 0,
+    }
+
+    finishRound(
+      metric,
+      isCorrect ? 'That is the right pair.' : `Not quite — the answer is ${associationQuestion.correctAnswer}.`,
+      isCorrect ? '' : `The correct pair is ${associationQuestion.queryLeft.label} → ${associationQuestion.correctAnswer}.`,
+      isCorrect ? 1 : 0,
+      1,
     )
   }
 
@@ -632,10 +689,9 @@ export function MemoryJourney() {
         ? 'Well done! Keep it up.'
         : 'Every effort counts. You are doing great.'
 
-  const goBack = () =>
-    phase === 'intro'
-      ? navigate(mode === 'daily' ? '/patient' : '/patient/games')
-      : undefined
+  const goBack = useCallback(() => {
+    navigate(mode === 'daily' ? '/patient' : '/patient/games')
+  }, [navigate, mode])
 
   // ── Loading ──
   if (!ready) {
@@ -660,7 +716,7 @@ export function MemoryJourney() {
         <GameIntro
           icon={Brain}
           title="Memory Journey"
-          description="Five gentle activities to help you remember."
+          description={t('memory_journey_desc')}
           backLabel={mode === 'daily' ? t('home') : t('activities')}
           onBack={goBack}
           onStart={startSession}
@@ -692,10 +748,12 @@ export function MemoryJourney() {
             seconds={viewTimeLeft}
             title={
               ROUND_TYPES[round] === 'order'
-                ? t('remember_order')
+                ? t('remember_sequence')
                 : ROUND_TYPES[round] === 'spatial'
                   ? t('remember_locations')
-                  : t('remember_objects')
+                  : ROUND_TYPES[round] === 'association'
+                    ? t('remember_pairs_title')
+                    : t('remember_objects')
             }
             subtitle={t('take_time')}
           />
@@ -720,6 +778,7 @@ export function MemoryJourney() {
       {phase === 'task' && ROUND_TYPES[round] === 'visual-recall' && config && (
         <ObjectRecallTask
           title={t('just_seen')}
+          hint={t('hint_object_recall')}
           config={config}
           selected={selected}
           onToggle={toggleSelected}
@@ -750,7 +809,21 @@ export function MemoryJourney() {
         />
       )}
 
-      {/* ── TASK: Personal Memory (Round 4) ── */}
+      {/* ── TASK: Association Recall (Round 4) ── */}
+      {phase === 'task' && ROUND_TYPES[round] === 'association' && (
+        <AssociationTask
+          question={associationQuestion}
+          selectedAnswer={selectedAnswer}
+          onSelect={(answer) => {
+            telemetryRef.current.recordInteraction()
+            setSelectedAnswer(answer)
+            setChanges((v) => v + 1)
+          }}
+          onSubmit={submitAssociation}
+        />
+      )}
+
+      {/* ── TASK: Personal Memory (Round 5) ── */}
       {phase === 'task' && ROUND_TYPES[round] === 'personal' && (
         <PersonalMemoryTask
           question={personalQuestion}
@@ -764,10 +837,11 @@ export function MemoryJourney() {
         />
       )}
 
-      {/* ── TASK: Delayed Recall (Round 5) ── */}
+      {/* ── TASK: Delayed Recall (Round 6) ── */}
       {phase === 'task' && ROUND_TYPES[round] === 'delayed' && config && (
         <ObjectRecallTask
           title={t('seen_earlier')}
+          hint={t('hint_delayed')}
           config={config}
           selected={selected}
           onToggle={toggleSelected}
@@ -820,9 +894,9 @@ export function MemoryJourney() {
 // ─── Sub-tasks ──────────────────────────────────────────────────
 
 function ObjectRecallTask({
-  title, config, selected, onToggle, hints, showHint, onHint, onSubmit,
+  title, hint, config, selected, onToggle, hints, showHint, onHint, onSubmit,
 }: {
-  title: string; config: MemoryRoundConfig; selected: Set<string>
+  title: string; hint: string; config: MemoryRoundConfig; selected: Set<string>
   onToggle: (id: string) => void; hints: number; showHint: boolean
   onHint: () => void; onSubmit: () => void
 }) {
@@ -832,7 +906,7 @@ function ObjectRecallTask({
       <h1 className="mt-4 text-center text-3xl font-bold text-foreground">{title}</h1>
       {showHint && (
         <p className="mx-auto mt-4 rounded-xl bg-primary/10 px-5 py-3 text-lg font-medium text-primary">
-          {t('memory_hint')}
+          {hint}
         </p>
       )}
       <div className="mx-auto mt-8 grid w-full max-w-2xl grid-cols-2 gap-4 sm:grid-cols-3">
@@ -930,6 +1004,58 @@ function OrderTask({
       <Button size="lg" className="mx-auto mt-auto w-full max-w-sm text-lg"
         disabled={ordered.length !== config.targets.length} onClick={onSubmit}>
         {t('check_order')}
+      </Button>
+    </section>
+  )
+}
+
+function AssociationTask({
+  question, selectedAnswer, onSelect, onSubmit,
+}: {
+  question: AssociationQuestion | null
+  selectedAnswer: string | null
+  onSelect: (answer: string) => void
+  onSubmit: () => void
+}) {
+  const { t } = useLanguage()
+  if (!question) {
+    return (
+      <section className="flex flex-1 flex-col items-center justify-center text-center">
+        <div className="flex size-20 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Heart className="size-10" /></div>
+        <h1 className="mt-6 text-3xl font-bold text-foreground">Association activity is being prepared.</h1>
+        <p className="mt-3 text-lg text-muted-foreground">This round will be available soon.</p>
+        <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={onSubmit}>{t('next_round')}</Button>
+      </section>
+    )
+  }
+  return (
+    <section className="flex flex-1 flex-col items-center">
+      <h1 className="mt-5 text-center text-3xl font-bold text-foreground">
+        {t('association_question').replace('{object}', question.queryLeft.label.toLowerCase())}
+      </h1>
+      <p className="mt-2 text-lg text-muted-foreground">{t('association_instruction')}</p>
+      <div className="mx-auto mt-6 grid w-full max-w-md grid-cols-1 gap-3">
+        {question.pairs.map((pair) => (
+          <div key={pair.left.id} className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-3">
+            <span className="text-lg font-semibold text-foreground">{pair.left.emoji} {pair.left.label}</span>
+            <span className="text-lg text-muted-foreground">→</span>
+            <span className="text-lg font-semibold text-primary">{pair.right}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-3 gap-3">
+        {question.options.map((option) => {
+          const chosen = selectedAnswer === option
+          return (
+            <button key={option} onClick={() => onSelect(option)} aria-pressed={chosen}
+              className={`flex min-h-16 cursor-pointer items-center justify-center rounded-xl border-2 px-4 text-lg font-semibold transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${chosen ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent'}`}>
+              {option}{chosen && <Check className="ml-2 size-5 text-primary" />}
+            </button>
+          )
+        })}
+      </div>
+      <Button size="lg" className="mx-auto mt-auto w-full max-w-sm text-lg" disabled={selectedAnswer === null} onClick={onSubmit}>
+        {t('submit_answer')}
       </Button>
     </section>
   )

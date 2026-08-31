@@ -5,6 +5,7 @@ import { PatientHomePage } from '@/pages/patient/home'
 import { GameSelection } from '@/features/games/GameSelection'
 import { MemoryJourney } from '@/features/games/memory/MemoryJourney'
 import { AttentionAdventure } from '@/features/games/attention/AttentionAdventure'
+import { GameErrorBoundary } from '@/features/games/GameErrorBoundary'
 import { RemindersPage } from '@/pages/patient/reminders'
 import { MemoriesPage } from '@/pages/patient/memories'
 import { ProgressPage } from '@/pages/patient/progress'
@@ -29,8 +30,8 @@ export function AppRoutes() {
       <Route path="/patient/language" element={<LanguageSelectPage />} />
       <Route path="/patient" element={<PatientHomePage />} />
       <Route path="/patient/games" element={<GameSelection />} />
-      <Route path="/patient/game/memory" element={<MemoryJourney />} />
-      <Route path="/patient/game/pattern" element={<AttentionAdventure />} />
+      <Route path="/patient/game/memory" element={<GameErrorBoundary><MemoryJourney /></GameErrorBoundary>} />
+      <Route path="/patient/game/pattern" element={<GameErrorBoundary><AttentionAdventure /></GameErrorBoundary>} />
 
       <Route path="/patient/activity" element={<Navigate to="/patient/game/memory?mode=daily" replace />} />
 

@@ -18,7 +18,7 @@ export interface GameSession {
   id: string
   patientId: string
   gameType: 'memory' | 'pattern'
-  difficultyLevel: 1 | 2 | 3 | 4
+  difficultyLevel: 1 | 2 | 3 | 4 | 5
   accuracy: number
   responseTimeMs: number
   hintsUsed: number

@@ -270,6 +270,77 @@ const expert: ChallengeConfig[] = [
   },
 ]
 
+// ─── Difficulty 5 ───────────────────────────────────────────────
+
+const advanced: ChallengeConfig[] = [
+  {
+    id: 'adv-wcn-1', type: 'what-comes-next', prompt: 'What comes next?',
+    sequence: ['🍎', '🍌', '☕', '📖', '🔑', '🌸', '🍎', '🍌'], answer: '☕',
+    options: ['🍎', '🍌', '☕', '📖', '🔑', '🌸', '☂️'],
+  },
+  {
+    id: 'adv-fdo-1', type: 'find-different', prompt: 'Find the different one.',
+    sequence: [], answer: '🌙',
+    grid: ['☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
+    options: ['☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
+  },
+  {
+    id: 'adv-tf-1', type: 'target-find', prompt: 'Find all the keys.',
+    sequence: [], answer: '🔑',
+    targetItems: ['🔑', '📖', '☕', '🔑', '🌸', '🔑', '🪑', '🍌', '🔑', '📞', '🔑', '💡'],
+    targetIndices: [0, 3, 5, 8, 10],
+    options: ['🔑', '📖', '☕', '🌸'],
+  },
+  {
+    id: 'adv-sc-1', type: 'sequence-completion', prompt: 'What comes next?',
+    sequence: ['A', 'B', 'C', 'A', 'B', 'C', 'A', 'B', 'C', 'A'], answer: 'B',
+    options: ['A', 'B', 'C', 'D'],
+  },
+  {
+    id: 'adv-np-1', type: 'number-pattern', prompt: 'What comes next?',
+    sequence: ['1', '4', '9', '16'], answer: '25', options: ['20', '25', '36', '16'],
+  },
+  {
+    id: 'adv-mp-1', type: 'match-pair', prompt: 'Match the pairs.',
+    sequence: [], answer: '',
+    pairs: [
+      { left: '🍎', right: 'Apple' }, { left: '☕', right: 'Cup' },
+      { left: '📖', right: 'Book' }, { left: '🔑', right: 'Key' },
+      { left: '🌸', right: 'Flower' }, { left: '☂️', right: 'Umbrella' },
+    ],
+    options: ['🍎', '☕', '📖', '🔑', '🌸', '☂️', 'Apple', 'Cup', 'Book', 'Key', 'Flower', 'Umbrella'],
+  },
+  {
+    id: 'adv-qc-1', type: 'quick-choice', prompt: 'Tap the spoon.',
+    sequence: [], answer: '🥄',
+    targetItems: ['🔑', '🥄', '📖', '☕', '🌸', '☂️', '🪑', '💡', '🪑'],
+    options: ['🔑', '🥄', '📖', '☕', '🌸', '☂️', '🪑', '💡'],
+  },
+  {
+    id: 'adv-rs-1', type: 'rule-switch', prompt: 'Tap the RED shape.',
+    sequence: [], answer: '🔴',
+    options: ['🔴', '🔵', '🟢', '🟡'],
+    ruleChanges: { from: 'Tap the RED shape.', to: 'Now tap the CIRCLE.', changeAt: 3 },
+  },
+  {
+    id: 'adv-vs-1', type: 'visual-sequence', prompt: 'Watch the sequence carefully.',
+    sequence: ['🌸', '🔑', '📖', '☕'], answer: 'key',
+    options: ['flower', 'key', 'book', 'cup'],
+  },
+  {
+    id: 'adv-sa-1', type: 'selective-attention', prompt: 'Tap only the cups.',
+    sequence: [], answer: '☕',
+    targetItems: ['📖', '☕', '🔑', '☕', '🌸', '☕', '🪑'],
+    targetIndices: [1, 3, 5],
+    options: ['☕'],
+  },
+  {
+    id: 'adv-wm-1', type: 'working-memory-choice', prompt: 'Remember: Flower means YES.',
+    sequence: [], answer: 'Flower',
+    options: ['Flower', 'Book', 'Key', 'Cup'],
+  },
+]
+
 // ─── Selection logic ────────────────────────────────────────────
 
 const byDifficulty: Record<DifficultyLevel, ChallengeConfig[]> = {
@@ -277,17 +348,49 @@ const byDifficulty: Record<DifficultyLevel, ChallengeConfig[]> = {
   2: medium,
   3: hard,
   4: expert,
+  5: advanced,
+}
+
+/**
+ * Validate a challenge config has required fields for its type.
+ * Returns true if the challenge is usable.
+ */
+function validateChallenge(c: ChallengeConfig): boolean {
+  if (!c.id || !c.prompt || !c.answer) return false
+
+  switch (c.type) {
+    case 'find-different':
+      return Boolean(c.grid && c.grid.length > 0)
+    case 'target-find':
+      return Boolean(c.targetItems && c.targetItems.length > 0 && c.targetIndices && c.targetIndices.length > 0)
+    case 'match-pair':
+      return Boolean(c.pairs && c.pairs.length > 0 && c.options.length >= c.pairs.length * 2)
+    case 'rule-switch':
+      return Boolean(c.options.length > 0 && c.ruleChanges)
+    case 'what-comes-next':
+    case 'sequence-completion':
+    case 'number-pattern':
+      return Boolean(c.sequence.length > 0 && c.options.length > 0)
+    default:
+      return c.options.length > 0
+  }
 }
 
 /**
  * Get a set of challenges for one session.
- * Picks 7 challenges from the pool, ensuring type variety.
+ * Picks 8 challenges from the pool, ensuring type variety.
+ * Validates each challenge before including it.
  */
 export function getSessionChallenges(
   difficulty: DifficultyLevel,
-  count: number = 7,
+  count: number = 8,
 ): ChallengeConfig[] {
-  const pool = byDifficulty[difficulty]
+  const pool = byDifficulty[difficulty].filter(validateChallenge)
+
+  // If pool is too small after validation, use all valid challenges
+  if (pool.length <= count) {
+    return [...pool].sort(() => Math.random() - 0.5)
+  }
 
   // Group by type
   const byType = new Map<ChallengeType, ChallengeConfig[]>()

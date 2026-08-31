@@ -5,12 +5,76 @@ export const en = {
   app_name: 'Monor Xathi', select_language: 'Choose your language', select_language_label: 'Select {language}', hear_again: 'Hear Again', home: 'Home', games: 'Games', reminders: 'Reminders', memories: 'Memories', main_navigation: 'Main navigation', patient_tools: 'Patient tools', back: 'Back', next: 'Next', loading: 'Loading…', loading_activity: 'Loading activity…', activities_label: 'Activities',
   games_title: 'Choose an Activity', games_intro: 'Take your time. You can play either activity.', four_gentle_activities: 'Four gentle activities using familiar objects.', six_gentle_questions: 'Six gentle questions with patterns and shapes.', start_activity: 'Start Activity',
   exit_title: 'Leave this activity?', exit_description: 'Your current round will not be saved.', keep_playing: 'Keep Playing', leave_activity: 'Leave Activity',
-  round_of: 'Round {current} of {total}', question_of: 'Question {current} of {total}', remember_later: 'Remember these for later', see_again_later: 'You will see these objects again near the end.', remember_order: 'Remember the order', remember_locations: 'Remember where each object is', remember_objects: 'Remember these objects', take_time: 'Take your time and look carefully.', just_seen: 'Which objects did you just see?', seen_earlier: 'Which objects did you see earlier?', memory_hint: 'Think about the objects and take your time.', hint: 'Hint', submit_answer: 'Submit Answer', order_instruction: 'Put the objects in the remembered order', order_help: 'Choose each object in order, or drag objects into the numbered places.', choose_object: 'Choose an object', check_order: 'Check Order', where_was: 'Where was the {object}?', choose_place: 'Choose one place.', try_another_place: 'Try another place.', position: 'Position {number}', selected: 'Selected', good_effort: 'Good effort', remembered_result: '{correct} of {total} remembered', positions_result: '{correct} of {total} positions correct', found_place: 'You found the right place', next_round: 'Next Round', see_results: 'See Results', activity_complete: 'Activity Complete', accuracy: 'Accuracy', objects_remembered: 'Objects remembered', average_response: 'Average response time', seconds_short: '{count} sec', count_of: '{current} of {total}', rounds_completed: 'Rounds completed', continue_pattern: 'Continue to Pattern & Attention', back_activities: 'Back to Activities', play_again: 'Play Again', details_save_later: 'Activity complete. Some details will save later.',
-  pattern_loading: 'Loading activity…', pattern_prompt_default: 'Look carefully and choose what comes next.', what_comes_next: 'What comes next?', which_shape_next: 'Which shape comes next?', which_missing: 'Which item is missing?', find_different: 'Find the different one.', look_repeats: 'Look for what repeats or changes.', look_shapes: 'Look carefully at each shape.', visual_sequence: 'Visual sequence', answer_label: 'Answer {number}: {answer}', skip: 'Skip', check_answer: 'Check Answer', thats_okay: 'That’s okay', thats_right: 'That’s right', nice_try: 'Nice try', answer_is: 'The answer is {answer}.', next_question: 'Next Question', correct_patterns: 'Correct patterns', questions_completed: 'Questions completed', finish_today: 'Finish Today’s Activities', daily_complete: 'Today’s Activities Complete', daily_complete_message: 'Well done for taking part today.', return_home: 'Return Home',
+  round_of: 'Round {current} of {total}', question_of: 'Question {current} of {total}', remember_later: 'Remember these for later', see_again_later: 'You will see these objects again near the end.', remember_order: 'Remember the order', remember_locations: 'Remember where each object is', remember_objects: 'Remember these objects', take_time: 'Take your time and look carefully.', just_seen: 'Which objects did you just see?', seen_earlier: 'Which objects did you see earlier?',  memory_hint: 'Think about what you saw. You can take your time.',
+  hint_object_recall: 'Look at each object. Some may look similar — focus on what you remember seeing.',
+  hint_spatial: 'Picture the board in your mind. Think about where each object was placed.',
+  hint_sequence: 'Think step by step. What did you see first, then next, then last?',
+  hint_association: 'Think about which things naturally go together.',
+  hint_personal: 'Think about the person in the photo and what you know about them.',
+  hint_delayed: 'These were shown earlier. Try to picture them in your mind.',
+  hint_garden_search: 'Scan the scene slowly. Look for the specific items mentioned.',
+  hint_find_changed: 'Compare what you remember with what you see now. What is different?',
+  hint_odd_one: 'Look at each item carefully. One is slightly different from the rest.',
+  hint_match_pair: 'Remember where cards were. Match two that go together.',
+  hint_rule_switch: 'Follow the current rule. Listen for when it changes.',
+  hint_visual_sequence: 'Picture the sequence. Think about what came before and after.',
+  hint_quick_find: 'Scan all the items. Look for the specific object.', hint: 'Hint', submit_answer: 'Submit Answer',
+  remember_sequence: 'Watch the sequence carefully.',
+  remember_pairs_title: 'Remember these connections.',
+  order_instruction: 'Put the objects in the order you saw them.',
+  order_help: 'Tap each object in the correct order, from first to last.', choose_object: 'Choose an object', check_order: 'Check Order', where_was: 'Where was the {object}?', choose_place: 'Choose one place.', try_another_place: 'Try another place.', position: 'Position {number}', selected: 'Selected', good_effort: 'Good effort', remembered_result: '{correct} of {total} remembered', positions_result: '{correct} of {total} positions correct', found_place: 'You found the right place', next_round: 'Next Round', see_results: 'See Results', activity_complete: 'Activity Complete', accuracy: 'Accuracy', objects_remembered: 'Objects remembered', average_response: 'Average response time', seconds_short: '{count} sec', count_of: '{current} of {total}', rounds_completed: 'Rounds completed', continue_pattern: 'Continue to Pattern & Attention', back_activities: 'Back to Activities', play_again: 'Play Again', details_save_later: 'Activity complete. Some details will save later.',
+  pattern_loading: 'Loading activity…', pattern_prompt_default: 'Look carefully and choose what comes next.', what_comes_next: 'What comes next?', which_shape_next: 'Which shape comes next?', which_missing: 'Which item is missing?', find_different: 'Find the different one.',  look_repeats: 'Look for what repeats or changes in the pattern.', look_shapes: 'Look carefully at each shape.', visual_sequence: 'Visual sequence', answer_label: 'Answer {number}: {answer}', skip: 'Skip', check_answer: 'Check Answer', thats_okay: 'That’s okay', thats_right: 'That’s right', nice_try: 'Nice try', answer_is: 'The answer is {answer}.', next_question: 'Next Question', correct_patterns: 'Correct patterns', questions_completed: 'Questions completed', finish_today: 'Finish Today’s Activities', daily_complete: 'Today’s Activities Complete', daily_complete_message: 'Well done for taking part today.', return_home: 'Return Home',
   object_apple: 'Apple', object_banana: 'Banana', object_cup: 'Cup', object_book: 'Book', object_key: 'Key', object_umbrella: 'Umbrella', object_clock: 'Clock', object_flower: 'Flower', object_chair: 'Chair', object_ball: 'Ball', object_spoon: 'Spoon', object_glasses: 'Glasses', object_bag: 'Bag', object_bottle: 'Bottle', object_telephone: 'Telephone',
   reminders_title: 'My Reminders', reminders_prepared: 'Your caregiver prepared these reminders.', works_offline: 'Works offline', today: 'Today', completed: 'Completed', no_pending_reminders: 'No reminders waiting right now.', no_completed_reminders: 'Completed reminders will appear here.', medicine: 'Medicine', hydration: 'Hydration', meal: 'Meal', walk: 'Walk', family_call: 'Family Call', daily_activity: 'Daily Activity', taken: 'Taken', done: 'Done', remind_me_later: 'Remind Me Later', remind_again_at: 'Remind again at {time}', remind_in: 'Remind me in:', minutes: '{count} minutes', one_hour: '1 hour', reminder_saved_later: 'Saved on this device. It will sync later.', reminder_update_failed: 'Could not update this reminder. Please try again.',
   memory_book: 'My Memories', memory_book_instruction: 'People, places and moments that matter to you.', no_memories: 'No memories yet.', viewing_cached: 'Viewing saved memories', all_memories: 'All Memories', show_one: 'Show One', previous: 'Previous', next_memory: 'Next', memory_counter: '{current} of {total}', hear_memory: 'Hear This Memory', view_all_memories: 'View All Memories',
   progress_title: "Today’s Progress", progress_intro: 'A simple look at what you completed today.', memory_activity: 'Memory Recall', pattern_activity: 'Pattern & Attention', reminders_progress: 'Reminders {completed}/{total}', completed_mark: 'Completed', not_yet: 'Not yet', progress_complete: 'You completed today’s activities.', progress_encouragement: 'Every activity you take part in matters.',
   checkin_title: 'Daily Check-in', checkin_q1: 'How are you feeling today?', checkin_q2: 'How is your energy today?', checkin_q3: 'Would you like to talk to someone?', mood_very_good: 'Very good', mood_good: 'Good', mood_okay: 'Okay', mood_not_good: 'Not so good', energy_good: 'Good', energy_okay: 'Okay', energy_low: 'Low', contact_no: "No, I’m okay", contact_yes: 'Yes, contact my caregiver', saving: 'Saving…', checkin_thanks: 'Thank you for checking in.', saved_device: 'Your answers are saved on this device.', contact_caregiver: 'Contact Caregiver', back_home: 'Back Home', checkin_save_error: 'Your check-in could not be saved. Please try again.',
-  help_title: 'How can we help?', choose_option: 'Choose one option below.', call_someone: 'Call someone', call_caregiver: 'Call Caregiver', call_family: 'Call Family Member', emergency_services: 'Emergency Services', emergency_subtitle: 'Call your configured emergency number', call: 'Call', copy_number: 'Copy Number', copied: 'Copied', caregiver_call_question: 'Would you like Rahul to call you?', support_not_emergency: 'This sends a support request. It is not an emergency alert.', ask_contact: 'Ask caregiver to contact me', request_sent: 'Request Sent', request_saved: 'Your request is saved. Rahul will be notified when syncing is available.', request_saved_sync: 'Your request is saved. Rahul will see it when the app syncs.', request_failed: 'Could not save your request. Please try again.', copy_failed: 'Please copy this number: {number}',
+  help_title: 'How can we help?', choose_option: 'Choose one option below.', call_someone: 'Call someone', call_caregiver: 'Call Caregiver', call_family: 'Call Family Member', emergency_services: 'Emergency Services', emergency_subtitle: 'Call your configured emergency number', call: 'Call', copy_number: 'Copy Number', copied: 'Copied', caregiver_call_question: 'Would you like Rahul to call you?', support_not_emergency: 'This sends a support request. It is not an emergency alert.', ask_contact: 'Ask caregiver to contact me', request_sent: 'Request Sent', request_saved: 'Your request is saved. Rahul will be notified when syncing is available.', request_saved_sync: 'Your request is saved. Rahul will see it when the app syncs.', request_failed: 'Could not save your request. Please try again.',  copy_failed: 'Please copy this number: {number}',
+
+  // Scene names for screen readers
+  scene_market_basket: 'Market Basket',
+  scene_where_did_it_go: 'Where Did It Go?',
+  scene_morning_routine: 'Morning Routine',
+  scene_family_connection: 'Family Connection',
+  scene_pairs_and_connections: 'Pairs and Connections',
+  scene_remember_for_later: 'Remember for Later',
+  // Attention scene names
+  scene_garden_search: 'Garden Search',
+  scene_find_what_changed: 'Find What Changed',
+  scene_odd_one_out: 'Odd One Out',
+  scene_matching_pairs: 'Matching Pairs',
+  scene_follow_the_rule: 'Follow the Rule',
+  scene_complete_the_story: 'Complete the Story',
+  scene_quick_find: 'Quick Find',
+
+
+  // Memory Journey — Association Recall
+  association_instruction: 'These things go together.',
+  association_question: 'What goes with the {object}?',
+  association_remember_pairs: 'Remember these pairs.',
+
+  // Memory Journey — Stage labels
+  stage_object_recall: 'Object Recall',
+  stage_spatial_memory: 'Spatial Memory',
+  stage_sequence_memory: 'Sequence Memory',
+  stage_association: 'Association',
+  stage_personal_memory: 'Personal Memory',
+  stage_delayed_recall: 'Delayed Recall',
+
+  // Attention — New challenge types
+  visual_sequence_instruction: 'Watch the sequence carefully.',
+  visual_sequence_question: 'What came {position}?',
+  visual_sequence_after: 'Which item came after the {object}?',
+  selective_attention_instruction: 'Tap only the {target}.',
+  selective_attention_distractors: 'Do not tap other items.',
+  working_memory_instruction: 'Remember: {item} means YES.',
+  working_memory_question: 'Which object meant YES?',
+
+  // Memory Journey descriptions
+  memory_journey_desc: 'Six gentle activities to help you remember.',
+  attention_adventure_desc: 'Short visual questions. Take your time.',
+
+  // Association pair feedback
+  association_correct: 'That is the right pair.',
+  association_incorrect: 'Not quite — the answer is {answer}.',
 } as const

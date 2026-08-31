@@ -57,6 +57,11 @@ export class TelemetryTracker {
   private _difficulty: DifficultyLevel = 1
   private _taskType = ''
 
+  /** Get the time of the first interaction (or null if none recorded) */
+  getFirstInteractionAt(): number | null {
+    return this.firstInteractionAt
+  }
+
   /** Start tracking a new challenge */
   start(difficulty: DifficultyLevel, taskType: string) {
     this.startedAt = performance.now()

@@ -68,10 +68,18 @@ export interface DelayedRecallMetric extends BaseRoundMetric {
   itemsIntroducedEarlier: number
 }
 
+export interface AssociationRecallMetric extends BaseRoundMetric {
+  roundType: 'association-recall'
+  pairsShown: number
+  correctAnswer: boolean
+  responseTimeMs: number
+}
+
 export type MemoryRoundMetric =
   | ObjectRecallMetric
   | SpatialMemoryMetric
   | OrderMemoryMetric
+  | AssociationRecallMetric
   | PersonalMemoryMetric
   | DelayedRecallMetric
 
@@ -86,6 +94,9 @@ export type ChallengeType =
   | 'match-pair'
   | 'quick-choice'
   | 'rule-switch'
+  | 'visual-sequence'
+  | 'selective-attention'
+  | 'working-memory-choice'
 
 export interface ChallengeMetric {
   challengeId: string
