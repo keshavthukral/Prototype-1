@@ -1,8 +1,15 @@
 /**
- * Attention Adventure — 8 short challenges from varied types.
+ * Attention Adventure V2 — 7 challenge types in a coherent game world.
  *
- * Pattern Completion, Odd One Out, Target Search, Matching Pairs,
- * Rule Switching, Visual Sequence, Selective Attention, Working Memory.
+ * 1. Garden Search — find all flowers in illustrated scene
+ * 2. Find What Changed — spot changes in a scene
+ * 3. Odd One Out — polished visual grid
+ * 4. Matching Pairs — card memory board
+ * 5. Follow the Rule — rule switching
+ * 6. Complete the Story — visual sequences
+ * 7. Quick Find — quick identification
+ *
+ * Uses deterministic seeded variation for session variety.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -29,12 +36,13 @@ import {
 } from '@/lib/repositories/game-session'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { useLanguage } from '@/lib/i18n/language-context'
+import { sessionSeed } from '@/lib/games/seeded-random'
 
 // ─── Types ──────────────────────────────────────────────────────
 
 type Phase = 'intro' | 'challenge' | 'feedback' | 'final-result' | 'daily-complete'
 
-const TOTAL_CHALLENGES = 8
+const TOTAL_CHALLENGES = 7
 
 // ─── Main Component ─────────────────────────────────────────────
 
@@ -69,7 +77,10 @@ export function AttentionAdventure() {
   const [ruleSwitchIndex, setRuleSwitchIndex] = useState(0)
   const [currentPrompt, setCurrentPrompt] = useState('')
 
-  // Challenges ref — avoids stale closure in beginChallenge
+  // Find-what-changed state
+  const [showingBefore, setShowingBefore] = useState(true)
+
+  // Challenges ref
   const challengesRef = useRef<ChallengeConfig[]>([])
 
   // Session
@@ -94,7 +105,7 @@ export function AttentionAdventure() {
     })()
   }, [user?.id])
 
-  // Keep ref in sync with state
+  // Keep ref in sync
   useEffect(() => {
     challengesRef.current = challenges
   }, [challenges])
@@ -110,8 +121,8 @@ export function AttentionAdventure() {
     setMatchedPairs(new Set())
     setTargetFindSelected(new Set())
     setRuleSwitchIndex(0)
+    setShowingBefore(true)
 
-    // Use ref to always read current challenges (avoids stale closure)
     const c = challengesRef.current[nextIndex]
     if (c?.type === 'rule-switch' && c.ruleChanges) {
       setCurrentPrompt(c.ruleChanges.from)
@@ -125,7 +136,8 @@ export function AttentionAdventure() {
 
   // ── Start Game ──
   const startGame = () => {
-    const pool = getSessionChallenges(difficulty, TOTAL_CHALLENGES)
+    const seed = sessionSeed()
+    const pool = getSessionChallenges(difficulty, TOTAL_CHALLENGES, seed)
     setChallenges(pool)
     challengesRef.current = pool
     setMetrics([])
@@ -202,6 +214,14 @@ export function AttentionAdventure() {
       setTimeout(() => setMatchSelected([]), 400)
     }
   }
+
+  // ── Find What Changed — auto-advance after viewing "before" ──
+  useEffect(() => {
+    if (phase === 'challenge' && current?.type === 'find-different' && current.beforeItems && showingBefore) {
+      const timer = setTimeout(() => setShowingBefore(false), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [phase, current, showingBefore])
 
   // ── Record Challenge ──
   const recordChallenge = (completionState: 'completed' | 'skipped') => {
@@ -296,10 +316,10 @@ export function AttentionAdventure() {
   const accuracy = Math.round((correctCount / TOTAL_CHALLENGES) * 100)
   const encouragingMessage =
     accuracy >= 80
-      ? 'Excellent work! Your attention is sharp.'
+      ? t('v2_result_excellent')
       : accuracy >= 50
-        ? 'Well done! Keep practising.'
-        : 'Every effort helps. You are doing great.'
+        ? t('v2_result_practise')
+        : t('v2_result_great')
 
   const goBack = useCallback(() => {
     navigate(mode === 'daily' ? '/patient' : '/patient/games')
@@ -325,7 +345,7 @@ export function AttentionAdventure() {
         <GameIntro
           icon={Grid3X3}
           title="Attention & Pattern Adventure"
-          description="Short visual questions. Take your time."
+          description={t('attention_adventure_desc')}
           backLabel={mode === 'daily' ? t('home') : t('activities')}
           onBack={goBack}
           onStart={startGame}
@@ -342,6 +362,7 @@ export function AttentionAdventure() {
           matchSelected={matchSelected}
           matchedPairs={matchedPairs}
           targetFindSelected={targetFindSelected}
+          showingBefore={showingBefore}
           onSelect={current.type === 'rule-switch' ? handleRuleSwitchAnswer : selectAnswer}
           onMatchSelect={handleMatchSelect}
           onTargetFindToggle={toggleTargetFind}
@@ -394,18 +415,19 @@ export function AttentionAdventure() {
 
 function ChallengeView({
   challenge, selectedIndex, currentPrompt, showHint, hints,
-  matchSelected, matchedPairs, targetFindSelected,
+  matchSelected, matchedPairs, targetFindSelected, showingBefore,
   onSelect, onMatchSelect, onTargetFindToggle, onHint, onSubmit, onSkip,
 }: {
   challenge: ChallengeConfig; selectedIndex: number | null; currentPrompt: string
   showHint: boolean; hints: number; matchSelected: string[]; matchedPairs: Set<string>
-  targetFindSelected: Set<number>
+  targetFindSelected: Set<number>; showingBefore: boolean
   onSelect: (index: number) => void; onMatchSelect: (item: string) => void
   onTargetFindToggle: (index: number) => void
   onHint: () => void; onSubmit: () => void; onSkip: () => void
 }) {
   const { t } = useLanguage()
-  const isOddOneOut = challenge.type === 'find-different'
+  const isOddOneOut = challenge.type === 'find-different' && !challenge.beforeItems
+  const isFindChanged = challenge.type === 'find-different' && Boolean(challenge.beforeItems)
   const isMatchPair = challenge.type === 'match-pair'
   const isTargetFind = challenge.type === 'target-find'
 
@@ -419,7 +441,7 @@ function ChallengeView({
       {showHint && (
         <p className="mx-auto mt-4 rounded-xl bg-primary/10 px-5 py-3 text-lg font-medium text-primary">
           {challenge.type === 'find-different'
-            ? t('hint_odd_one')
+            ? isFindChanged ? t('hint_find_changed') : t('hint_odd_one')
             : challenge.type === 'match-pair'
               ? t('hint_match_pair')
               : challenge.type === 'target-find'
@@ -428,15 +450,13 @@ function ChallengeView({
                   ? t('hint_rule_switch')
                   : challenge.type === 'visual-sequence'
                     ? t('hint_visual_sequence')
-                    : challenge.type === 'selective-attention'
-                      ? t('hint_quick_find')
-                      : t('hint_quick_find')}
+                    : t('hint_quick_find')}
         </p>
       )}
 
       {/* Visual sequence */}
-      {!isOddOneOut && !isMatchPair && !isTargetFind && challenge.sequence.length > 0 && (
-        <div className="mx-auto mt-10 flex min-h-36 w-full max-w-3xl flex-wrap items-center justify-center gap-3 rounded-xl border border-border bg-card p-6" aria-label="Visual sequence">
+      {!isOddOneOut && !isFindChanged && !isMatchPair && !isTargetFind && challenge.sequence.length > 0 && (
+        <div className="mx-auto mt-10 flex min-h-36 w-full max-w-3xl flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-card p-6 shadow-sm" aria-label="Visual sequence">
           {challenge.sequence.map((item, i) => (
             <span key={`${item}-${i}`} className="flex size-16 items-center justify-center rounded-xl bg-secondary text-4xl font-bold text-foreground">{item}</span>
           ))}
@@ -444,7 +464,41 @@ function ChallengeView({
         </div>
       )}
 
-      {/* Find Different grid */}
+      {/* Find What Changed — before/after scene */}
+      {isFindChanged && (
+        <div className="mx-auto mt-8 w-full max-w-lg">
+          {showingBefore ? (
+            <div className="rounded-2xl border-2 border-primary/20 bg-gradient-to-b from-card to-primary/5 p-6 shadow-md">
+              <p className="mb-4 text-center text-sm font-medium text-muted-foreground">Look carefully at this scene...</p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {(challenge.beforeItems ?? challenge.grid ?? []).map((item, i) => (
+                  <span key={i} className="flex size-16 items-center justify-center rounded-xl bg-card border border-border/50 text-3xl shadow-sm">{item}</span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border-2 border-border bg-card p-6 shadow-sm">
+              <p className="mb-4 text-center text-sm font-medium text-primary">What is different now?</p>
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                {(challenge.afterItems ?? challenge.grid ?? []).map((item, i) => {
+                  const isChosen = selectedIndex === i
+                  return (
+                    <button key={i} onClick={() => onSelect(i)} aria-pressed={isChosen}
+                      className={`relative flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-all duration-150 shadow-sm active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                        isChosen ? 'border-primary bg-primary/10 shadow-md' : 'border-border bg-card hover:border-primary/40 hover:bg-accent hover:shadow-sm'
+                      }`}>
+                      {item}
+                      {isChosen && <Check className="absolute right-2 top-2 size-5 text-primary" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Find Different grid (Odd One Out) */}
       {isOddOneOut && challenge.grid && (
         <div className="mx-auto mt-10 grid w-full max-w-md gap-3"
           style={{ gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(challenge.grid.length))}, 1fr)` }}>
@@ -452,7 +506,9 @@ function ChallengeView({
             const isChosen = selectedIndex === i
             return (
               <button key={i} onClick={() => onSelect(i)} aria-pressed={isChosen}
-                className={`relative flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isChosen ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
+                className={`relative flex aspect-square cursor-pointer items-center justify-center rounded-2xl border-2 text-3xl shadow-sm transition-all duration-150 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                  isChosen ? 'border-primary bg-primary/10 shadow-md' : 'border-border bg-card hover:border-primary/40 hover:bg-accent hover:shadow-sm'
+                }`}>
                 {item}
                 {isChosen && <Check className="absolute right-2 top-2 size-5 text-primary" />}
               </button>
@@ -461,14 +517,16 @@ function ChallengeView({
         </div>
       )}
 
-      {/* Target Find — toggleable items */}
+      {/* Target Find — toggleable items (Garden Search) */}
       {isTargetFind && challenge.targetItems && (
-        <div className="mx-auto mt-10 flex flex-wrap items-center justify-center gap-4 rounded-xl border border-border bg-card p-6">
+        <div className="mx-auto mt-10 flex flex-wrap items-center justify-center gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
           {challenge.targetItems.map((item, i) => {
             const isSelected = targetFindSelected.has(i)
             return (
               <button key={i} onClick={() => onTargetFindToggle(i)} aria-pressed={isSelected}
-                className={`flex size-16 cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isSelected ? 'border-primary bg-primary/10' : 'border-transparent bg-secondary hover:border-primary/30'}`}>
+                className={`relative flex size-16 cursor-pointer items-center justify-center rounded-xl border-2 text-3xl shadow-sm transition-all duration-150 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                  isSelected ? 'border-primary bg-primary/10 shadow-md' : 'border-transparent bg-secondary hover:border-primary/30 hover:shadow-sm'
+                }`}>
                 {item}
                 {isSelected && <Check className="absolute -right-1 -top-1 size-4 text-primary" />}
               </button>
@@ -485,7 +543,9 @@ function ChallengeView({
             const isSelected = matchSelected.includes(item)
             return (
               <button key={item} onClick={() => onMatchSelect(item)} disabled={isMatched} aria-pressed={isSelected}
-                className={`relative flex h-20 cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 ${isMatched ? 'border-success bg-success/10' : isSelected ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
+                className={`relative flex h-20 cursor-pointer items-center justify-center rounded-2xl border-2 text-3xl shadow-sm transition-all duration-150 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 ${
+                  isMatched ? 'border-success bg-success/10 shadow-md' : isSelected ? 'border-primary bg-primary/10 shadow-md' : 'border-border bg-card hover:border-primary/40 hover:bg-accent hover:shadow-sm'
+                }`}>
                 {item}
                 {isMatched && <Check className="absolute right-1 top-1 size-4 text-success" />}
               </button>
@@ -494,15 +554,15 @@ function ChallengeView({
         </div>
       )}
 
-      {/* Multiple choice */}
-      {!isOddOneOut && !isMatchPair && !isTargetFind && (
+      {/* Multiple choice (for rule-switch, sequence-completion, quick-choice, etc.) */}
+      {!isOddOneOut && !isFindChanged && !isMatchPair && !isTargetFind && (
         <div className="mx-auto mt-8 grid w-full max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
           {challenge.options.map((option, optionIndex) => {
             const isSelected = selectedIndex === optionIndex
             return (
               <button key={`${option}-${optionIndex}`} onClick={() => onSelect(optionIndex)}
                 aria-pressed={isSelected} aria-label={`Answer ${optionIndex + 1}: ${option}`}
-                className="relative flex min-h-24 cursor-pointer items-center justify-center rounded-xl border-2 border-border bg-card text-4xl font-bold text-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary">
+                className="relative flex min-h-24 cursor-pointer items-center justify-center rounded-2xl border-2 border-border bg-card text-4xl font-bold text-foreground shadow-sm transition-all duration-150 hover:border-primary/40 hover:bg-accent hover:shadow-md active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary aria-pressed:shadow-md">
                 {option}
                 {isSelected && <Check className="absolute right-2 top-2 size-5 text-primary" />}
               </button>
@@ -522,13 +582,17 @@ function ChallengeView({
               ? !allPairsMatched
               : isTargetFind
                 ? targetFindSelected.size === 0
-                : selectedIndex === null
+                : isFindChanged && showingBefore
+                  ? true
+                  : selectedIndex === null
           }>
           {isMatchPair
             ? allPairsMatched ? t('check_answer') : `${matchedPairs.size / 2} / ${challenge.pairs?.length ?? 0} matched`
             : isTargetFind
               ? targetFindSelected.size > 0 ? `${targetFindSelected.size} selected` : t('check_answer')
-              : t('check_answer')}
+              : isFindChanged && showingBefore
+                ? 'Looking...'
+                : t('check_answer')}
         </Button>
       </div>
     </section>

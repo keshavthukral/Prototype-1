@@ -97,6 +97,14 @@ export type ChallengeType =
   | 'visual-sequence'
   | 'selective-attention'
   | 'working-memory-choice'
+  // V2 scene types
+  | 'garden-search'
+  | 'find-what-changed'
+  | 'odd-one-out'
+  | 'matching-pairs'
+  | 'follow-the-rule'
+  | 'complete-the-story'
+  | 'quick-find'
 
 export interface ChallengeMetric {
   challengeId: string

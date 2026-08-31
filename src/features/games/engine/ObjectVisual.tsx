@@ -1,6 +1,8 @@
 /**
  * ObjectVisual — renders a game object with its emoji icon and label.
  * Used across memory rounds and attention challenges.
+ *
+ * V2: Larger touch targets, subtle depth, clear labels.
  */
 
 import {
@@ -53,23 +55,40 @@ interface ObjectVisualProps {
   item: GameChoice
   compact?: boolean
   showLabel?: boolean
+  /** V2: larger size option */
+  large?: boolean
 }
 
 export function ObjectVisual({
   item,
   compact = false,
   showLabel = true,
+  large = false,
 }: ObjectVisualProps) {
   const Icon = iconMap[item.id] ?? Apple
-  const size = compact ? 'size-8' : 'size-12'
+  const size = large ? 'size-16' : compact ? 'size-8' : 'size-12'
 
   return (
     <div className="flex flex-col items-center justify-center">
-      <Icon className={size} aria-hidden="true" />
+      <div
+        className={`flex items-center justify-center rounded-xl ${
+          large
+            ? 'size-20 bg-primary/5'
+            : compact
+              ? 'size-12 bg-transparent'
+              : 'size-16 bg-primary/5'
+        }`}
+      >
+        <Icon
+          className={`${size} text-primary`}
+          aria-hidden="true"
+          strokeWidth={1.5}
+        />
+      </div>
       {showLabel && (
         <span
           className={`mt-2 font-semibold text-foreground ${
-            compact ? 'text-sm' : 'text-base'
+            large ? 'text-xl' : compact ? 'text-sm' : 'text-base'
           }`}
         >
           {item.label}

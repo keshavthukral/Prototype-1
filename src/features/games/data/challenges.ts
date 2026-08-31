@@ -1,12 +1,24 @@
 /**
- * Attention Adventure — Challenge Data Pool
+ * Attention Adventure — Challenge Data Pool (V2)
  *
- * 8 challenge types (including rule-switch), each with difficulty variants.
- * 7 challenges are selected per session from this pool, ensuring type variety.
+ * 7 challenge types, each with difficulty variants.
+ * 7 challenges are selected per session, ensuring type variety.
+ *
+ * V2 changes:
+ * - Uses illustrated scenes (garden, room, etc.)
+ * - Visual sequences use everyday concepts, not abstract symbols
+ * - Garden Search uses natural object placement
+ * - Find What Changed shows a scene before/after
+ * - Odd One Out uses subtle differences
+ * - Matching Pairs has flip-card board
+ * - Follow the Rule switches mid-challenge
+ * - Complete the Story uses visual sequences (seed→plant→flower)
+ * - Quick Find is a fast identification task
  */
 
 import type { DifficultyLevel } from '@/lib/games/adaptive-engine'
 import type { ChallengeType } from '@/features/games/metrics/types'
+import { createSeededRandom } from '@/lib/games/seeded-random'
 
 // ─── Challenge configs ──────────────────────────────────────────
 
@@ -31,313 +43,363 @@ export interface ChallengeConfig {
   targetIndices?: number[]
   /** For rule-switch: the rule changes mid-challenge */
   ruleChanges?: { from: string; to: string; changeAt?: number }
-  /** For rule-switch: which option index matches the rule */
-  correctOptionIndex?: number
+  /** For find-what-changed: items in the "before" scene */
+  beforeItems?: string[]
+  /** For find-what-changed: items in the "after" scene */
+  afterItems?: string[]
+  /** For find-what-changed: index of the changed item in afterItems */
+  changedIndex?: number
+  /** For complete-the-story: the scenario label */
+  scenarioLabel?: string
 }
 
-// ─── Difficulty 1 ───────────────────────────────────────────────
+// ─── Difficulty 1 (Easy) ───────────────────────────────────────
 
 const easy: ChallengeConfig[] = [
-  // TYPE A — What Comes Next
+  // 1. GARDEN SEARCH — "Find all the flowers"
   {
-    id: 'easy-wcn-1', type: 'what-comes-next', prompt: 'What comes next?',
-    sequence: ['🍎', '🍌', '🍎', '🍌'], answer: '🍎', options: ['🍎', '🍌', '🍊'],
-  },
-  {
-    id: 'easy-wcn-2', type: 'what-comes-next', prompt: 'What comes next?',
-    sequence: ['🌸', '🌸', '☀️', '🌸', '🌸'], answer: '☀️', options: ['🌸', '☀️', '🌙'],
+    id: 'easy-gs-1', type: 'target-find', prompt: 'Find all the flowers.',
+    sequence: [], answer: '🌸',
+    targetItems: ['☕', '📖', '🌸', '🔑', '🌸', '🪑', '🌸', '📖'],
+    targetIndices: [2, 4, 6],
+    options: ['🌸'],
   },
 
-  // TYPE B — Find the Different One
+  // 2. FIND WHAT CHANGED
   {
-    id: 'easy-fdo-1', type: 'find-different', prompt: 'Find the different one.',
-    sequence: [], answer: '🍌', grid: ['🍎', '🍎', '🍎', '🍌', '🍎', '🍎'],
+    id: 'easy-fwc-1', type: 'find-different', prompt: 'What changed?',
+    sequence: [], answer: '🔑',
+    grid: ['☕', '📖', '🔑', '🌸', '🪑'],
+    beforeItems: ['☕', '📖', '🔑', '🌸', '🪑'],
+    afterItems: ['☕', '📖', '🌸', '🌸', '🪑'],
+    changedIndex: 2,
+    options: ['☕', '📖', '🔑', '🌸', '🪑'],
+  },
+
+  // 3. ODD ONE OUT
+  {
+    id: 'easy-ooo-1', type: 'find-different', prompt: 'Find the different one.',
+    sequence: [], answer: '🍌',
+    grid: ['🍎', '🍎', '🍎', '🍌', '🍎', '🍎'],
     options: ['🍎', '🍎', '🍎', '🍌', '🍎', '🍎'],
   },
-  {
-    id: 'easy-fdo-2', type: 'find-different', prompt: 'Find the different one.',
-    sequence: [], answer: '🌙', grid: ['☀️', '☀️', '☀️', '🌙', '☀️', '☀️'],
-    options: ['☀️', '☀️', '☀️', '🌙', '☀️', '☀️'],
-  },
 
-  // TYPE C — Target Find
-  {
-    id: 'easy-tf-1', type: 'target-find', prompt: 'Find all the cups.',
-    sequence: [], answer: '☕',
-    targetItems: ['☕', '📖', '☕', '🔑', '📖', '☕', '🌸', '🪑'],
-    targetIndices: [0, 2, 5],
-    options: ['☕', '📖', '🔑'],
-  },
-
-  // TYPE D — Sequence Completion
-  {
-    id: 'easy-sc-1', type: 'sequence-completion', prompt: 'What comes next?',
-    sequence: ['A', 'B', 'A', 'B'], answer: 'A', options: ['A', 'B', 'C'],
-  },
-
-  // TYPE E — Number Pattern
-  {
-    id: 'easy-np-1', type: 'number-pattern', prompt: 'What comes next?',
-    sequence: ['1', '2', '3', '4'], answer: '5', options: ['3', '5', '6'],
-  },
-
-  // TYPE F — Match the Pair
+  // 4. MATCHING PAIRS
   {
     id: 'easy-mp-1', type: 'match-pair', prompt: 'Match the pairs.',
     sequence: [], answer: '',
-    pairs: [{ left: '🍎', right: 'Apple' }, { left: '🍌', right: 'Banana' }],
-    options: ['🍎', '🍌', 'Apple', 'Banana'],
+    pairs: [
+      { left: '☕', right: 'Tea' },
+      { left: '📖', right: 'Book' },
+    ],
+    options: ['☕', '📖', 'Tea', 'Book'],
   },
 
-  // TYPE G — Quick Choice
-  {
-    id: 'easy-qc-1', type: 'quick-choice', prompt: 'Tap the flower.',
-    sequence: [], answer: '🌸',
-    targetItems: ['📖', '🌸', '🔑', '☕'], options: ['📖', '🌸', '🔑', '☕'],
-  },
-
-  // TYPE H — Rule Switch
+  // 5. FOLLOW THE RULE
   {
     id: 'easy-rs-1', type: 'rule-switch', prompt: 'Tap the RED shape.',
     sequence: [], answer: '🔴',
     options: ['🔴', '🔵', '🟢', '🟡'],
     ruleChanges: { from: 'Tap the RED shape.', to: 'Now tap the CIRCLE.', changeAt: 2 },
   },
+
+  // 6. COMPLETE THE STORY — seed → small plant → larger plant → ?
+  {
+    id: 'easy-cts-1', type: 'sequence-completion', prompt: 'What comes next?',
+    sequence: ['🌱', '🌿', '🌻'],
+    answer: '🌻',
+    scenarioLabel: 'seed → plant → ?',
+    options: ['🌱', '🌿', '🌻', '☁️'],
+  },
+
+  // 7. QUICK FIND — "Find the umbrella"
+  {
+    id: 'easy-qf-1', type: 'quick-choice', prompt: 'Find the umbrella.',
+    sequence: [], answer: '☂️',
+    targetItems: ['📖', '☂️', '🔑', '☕'],
+    options: ['📖', '☂️', '🔑', '☕'],
+  },
 ]
 
-// ─── Difficulty 2 ───────────────────────────────────────────────
+// ─── Difficulty 2 (Medium) ─────────────────────────────────────
 
 const medium: ChallengeConfig[] = [
+  // 1. GARDEN SEARCH
   {
-    id: 'med-wcn-1', type: 'what-comes-next', prompt: 'What comes next?',
-    sequence: ['🍎', '🍌', '☕', '🍎', '🍌'], answer: '☕',
-    options: ['🍎', '🍌', '☕', '📖'],
-  },
-  {
-    id: 'med-wcn-2', type: 'what-comes-next', prompt: 'What comes next?',
-    sequence: ['🌸', '☀️', '🌸', '☀️', '🌸'], answer: '☀️',
-    options: ['🌸', '☀️', '🌙', '⭐'],
-  },
-  {
-    id: 'med-fdo-1', type: 'find-different', prompt: 'Find the different one.',
-    sequence: [], answer: '☕',
-    grid: ['📖', '📖', '📖', '📖', '☕', '📖', '📖', '📖'],
-    options: ['📖', '📖', '📖', '📖', '☕', '📖', '📖', '📖'],
-  },
-  {
-    id: 'med-tf-1', type: 'target-find', prompt: 'Find all the keys.',
+    id: 'med-gs-1', type: 'target-find', prompt: 'Find all the keys.',
     sequence: [], answer: '🔑',
     targetItems: ['🔑', '📖', '☕', '🔑', '🌸', '🔑', '🪑', '🍌', '🔑', '📞'],
     targetIndices: [0, 3, 5, 8],
     options: ['🔑', '📖', '☕', '🌸'],
   },
+
+  // 2. FIND WHAT CHANGED
   {
-    id: 'med-sc-1', type: 'sequence-completion', prompt: 'What comes next?',
-    sequence: ['A', 'B', 'C', 'A', 'B'], answer: 'C', options: ['A', 'B', 'C', 'D'],
+    id: 'med-fwc-1', type: 'find-different', prompt: 'What changed?',
+    sequence: [], answer: '🌸',
+    grid: ['☕', '📖', '🔑', '🌸', '🪑', '📞'],
+    beforeItems: ['☕', '📖', '🔑', '🌸', '🪑', '📞'],
+    afterItems: ['☕', '📖', '🔑', '🪑', '🪑', '📞'],
+    changedIndex: 3,
+    options: ['☕', '📖', '🔑', '🌸', '🪑', '📞'],
   },
+
+  // 3. ODD ONE OUT
   {
-    id: 'med-np-1', type: 'number-pattern', prompt: 'What comes next?',
-    sequence: ['2', '4', '6', '8'], answer: '10', options: ['9', '10', '12', '8'],
+    id: 'med-ooo-1', type: 'find-different', prompt: 'Find the different one.',
+    sequence: [], answer: '☕',
+    grid: ['📖', '📖', '📖', '📖', '☕', '📖', '📖', '📖'],
+    options: ['📖', '📖', '📖', '📖', '☕', '📖', '📖', '📖'],
   },
+
+  // 4. MATCHING PAIRS
   {
     id: 'med-mp-1', type: 'match-pair', prompt: 'Match the pairs.',
     sequence: [], answer: '',
     pairs: [
-      { left: '🍎', right: 'Apple' },
-      { left: '☕', right: 'Cup' },
+      { left: '☕', right: 'Tea' },
       { left: '📖', right: 'Book' },
+      { left: '🔑', right: 'Key' },
     ],
-    options: ['🍎', '☕', '📖', 'Apple', 'Cup', 'Book'],
+    options: ['☕', '📖', '🔑', 'Tea', 'Book', 'Key'],
   },
+
+  // 5. FOLLOW THE RULE
   {
-    id: 'med-qc-1', type: 'quick-choice', prompt: 'Tap the umbrella.',
-    sequence: [], answer: '☂️',
-    targetItems: ['🔑', '☂️', '📖', '☕', '🌸', '🪑'],
-    options: ['🔑', '☂️', '📖', '☕', '🌸', '🪑'],
-  },
-  {
-    id: 'med-rs-1', type: 'rule-switch', prompt: 'Tap the RED shape.',
-    sequence: [], answer: '🔴',
+    id: 'med-rs-1', type: 'rule-switch', prompt: 'Tap the BLUE shape.',
+    sequence: [], answer: '🔵',
     options: ['🔴', '🔵', '🟢', '🟡'],
-    ruleChanges: { from: 'Tap the RED shape.', to: 'Now tap the CIRCLE.', changeAt: 2 },
+    ruleChanges: { from: 'Tap the BLUE shape.', to: 'Now tap the SQUARE.', changeAt: 2 },
+  },
+
+  // 6. COMPLETE THE STORY — morning → afternoon → ?
+  {
+    id: 'med-cts-1', type: 'sequence-completion', prompt: 'What comes next?',
+    sequence: ['🌅', '☀️', '🌙'],
+    answer: '🌙',
+    scenarioLabel: 'morning → afternoon → ?',
+    options: ['🌅', '☀️', '🌙', '⭐'],
+  },
+
+  // 7. QUICK FIND
+  {
+    id: 'med-qf-1', type: 'quick-choice', prompt: 'Find the telephone.',
+    sequence: [], answer: '📞',
+    targetItems: ['🔑', '📞', '📖', '☕', '🌸', '🪑'],
+    options: ['🔑', '📞', '📖', '☕', '🌸', '🪑'],
   },
 ]
 
-// ─── Difficulty 3 ───────────────────────────────────────────────
+// ─── Difficulty 3 (Hard) ───────────────────────────────────────
 
 const hard: ChallengeConfig[] = [
+  // 1. GARDEN SEARCH
   {
-    id: 'hard-wcn-1', type: 'what-comes-next', prompt: 'What comes next?',
-    sequence: ['🍎', '🍌', '☕', '📖', '🍎', '🍌'], answer: '☕',
-    options: ['🍎', '🍌', '☕', '📖', '🔑'],
-  },
-  {
-    id: 'hard-fdo-1', type: 'find-different', prompt: 'Find the different one.',
-    sequence: [], answer: '🌙',
-    grid: ['☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️'],
-    options: ['☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️'],
-  },
-  {
-    id: 'hard-tf-1', type: 'target-find', prompt: 'Find all the flowers.',
+    id: 'hard-gs-1', type: 'target-find', prompt: 'Find all the flowers.',
     sequence: [], answer: '🌸',
     targetItems: ['🌸', '🔑', '🌸', '📖', '🌸', '☕', '🌸', '🪑', '🍌', '🌸', '📞', '💡'],
     targetIndices: [0, 2, 4, 6, 10],
     options: ['🌸', '🔑', '📖', '☕'],
   },
+
+  // 2. FIND WHAT CHANGED
   {
-    id: 'hard-sc-1', type: 'sequence-completion', prompt: 'What comes next?',
-    sequence: ['A', 'B', 'C', 'A', 'B', 'C', 'A'], answer: 'B',
-    options: ['A', 'B', 'C', 'D'],
+    id: 'hard-fwc-1', type: 'find-different', prompt: 'What changed?',
+    sequence: [], answer: '🪑',
+    grid: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '🍌'],
+    beforeItems: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '🍌'],
+    afterItems: ['☕', '📖', '🔑', '🌸', '📞', '📞', '🍌'],
+    changedIndex: 4,
+    options: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '🍌'],
   },
+
+  // 3. ODD ONE OUT
   {
-    id: 'hard-np-1', type: 'number-pattern', prompt: 'What comes next?',
-    sequence: ['1', '3', '5', '7'], answer: '9', options: ['8', '9', '10', '7'],
+    id: 'hard-ooo-1', type: 'find-different', prompt: 'Find the different one.',
+    sequence: [], answer: '🌙',
+    grid: ['☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️'],
+    options: ['☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️'],
   },
+
+  // 4. MATCHING PAIRS
   {
     id: 'hard-mp-1', type: 'match-pair', prompt: 'Match the pairs.',
     sequence: [], answer: '',
     pairs: [
-      { left: '🍎', right: 'Apple' }, { left: '☕', right: 'Cup' },
-      { left: '📖', right: 'Book' }, { left: '🔑', right: 'Key' },
+      { left: '☕', right: 'Tea' },
+      { left: '📖', right: 'Book' },
+      { left: '🔑', right: 'Key' },
+      { left: '🌸', right: 'Flower' },
     ],
-    options: ['🍎', '☕', '📖', '🔑', 'Apple', 'Cup', 'Book', 'Key'],
+    options: ['☕', '📖', '🔑', '🌸', 'Tea', 'Book', 'Key', 'Flower'],
   },
+
+  // 5. FOLLOW THE RULE
   {
-    id: 'hard-qc-1', type: 'quick-choice', prompt: 'Tap the clock.',
-    sequence: [], answer: '🕐',
-    targetItems: ['🔑', '🕐', '📖', '☕', '🌸', '☂️', '🪑'],
-    options: ['🔑', '🕐', '📖', '☕', '🌸', '☂️', '🪑'],
-  },
-  {
-    id: 'hard-rs-1', type: 'rule-switch', prompt: 'Tap the BLUE shape.',
-    sequence: [], answer: '🔵',
+    id: 'hard-rs-1', type: 'rule-switch', prompt: 'Tap the GREEN shape.',
+    sequence: [], answer: '🟢',
     options: ['🔴', '🔵', '🟢', '🟡'],
-    ruleChanges: { from: 'Tap the BLUE shape.', to: 'Now tap the SQUARE.', changeAt: 2 },
+    ruleChanges: { from: 'Tap the GREEN shape.', to: 'Now tap the TRIANGLE.', changeAt: 3 },
+  },
+
+  // 6. COMPLETE THE STORY — bud → bloom → bouquet
+  {
+    id: 'hard-cts-1', type: 'sequence-completion', prompt: 'What comes next?',
+    sequence: ['🌸', '🌷', '💐'],
+    answer: '💐',
+    scenarioLabel: 'bud → bloom → ?',
+    options: ['🌸', '🌷', '💐', '🪴'],
+  },
+
+  // 7. QUICK FIND
+  {
+    id: 'hard-qf-1', type: 'quick-choice', prompt: 'Find the glasses.',
+    sequence: [], answer: '👓',
+    targetItems: ['🔑', '👓', '📖', '☕', '🌸', '☂️', '🪑'],
+    options: ['🔑', '👓', '📖', '☕', '🌸', '☂️', '🪑'],
   },
 ]
 
-// ─── Difficulty 4 ───────────────────────────────────────────────
+// ─── Difficulty 4 (Expert) ─────────────────────────────────────
 
 const expert: ChallengeConfig[] = [
+  // 1. GARDEN SEARCH
   {
-    id: 'exp-wcn-1', type: 'what-comes-next', prompt: 'What comes next?',
-    sequence: ['🍎', '🍌', '☕', '📖', '🔑', '🍎', '🍌'], answer: '☕',
-    options: ['🍎', '🍌', '☕', '📖', '🔑', '🌸'],
-  },
-  {
-    id: 'exp-fdo-1', type: 'find-different', prompt: 'Find the different one.',
-    sequence: [], answer: '🌙',
-    grid: ['☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
-    options: ['☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
-  },
-  {
-    id: 'exp-tf-1', type: 'target-find', prompt: 'Find all the flowers.',
+    id: 'exp-gs-1', type: 'target-find', prompt: 'Find all the flowers.',
     sequence: [], answer: '🌸',
     targetItems: ['🌸', '🔑', '🌸', '📖', '🌸', '☕', '🌸', '🪑', '🍌', '🌸', '📞', '💡', '🌸', '🍽️', '🌸'],
     targetIndices: [0, 2, 4, 6, 9, 12, 14],
     options: ['🌸', '🔑', '📖', '☕'],
   },
+
+  // 2. FIND WHAT CHANGED
   {
-    id: 'exp-sc-1', type: 'sequence-completion', prompt: 'What comes next?',
-    sequence: ['A', 'B', 'C', 'D', 'A', 'B', 'C', 'D', 'A'], answer: 'B',
-    options: ['A', 'B', 'C', 'D'],
+    id: 'exp-fwc-1', type: 'find-different', prompt: 'What changed?',
+    sequence: [], answer: '🍌',
+    grid: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '🍌', '💡'],
+    beforeItems: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '🍌', '💡'],
+    afterItems: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '💡', '💡'],
+    changedIndex: 6,
+    options: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '🍌', '💡'],
   },
+
+  // 3. ODD ONE OUT
   {
-    id: 'exp-np-1', type: 'number-pattern', prompt: 'What comes next?',
-    sequence: ['2', '4', '8', '16'], answer: '32', options: ['24', '32', '64', '16'],
+    id: 'exp-ooo-1', type: 'find-different', prompt: 'Find the different one.',
+    sequence: [], answer: '🌙',
+    grid: ['☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
+    options: ['☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
   },
+
+  // 4. MATCHING PAIRS
   {
     id: 'exp-mp-1', type: 'match-pair', prompt: 'Match the pairs.',
     sequence: [], answer: '',
     pairs: [
-      { left: '🍎', right: 'Apple' }, { left: '☕', right: 'Cup' },
-      { left: '📖', right: 'Book' }, { left: '🔑', right: 'Key' },
+      { left: '☕', right: 'Tea' },
+      { left: '📖', right: 'Book' },
+      { left: '🔑', right: 'Key' },
       { left: '🌸', right: 'Flower' },
+      { left: '☂️', right: 'Umbrella' },
     ],
-    options: ['🍎', '☕', '📖', '🔑', '🌸', 'Apple', 'Cup', 'Book', 'Key', 'Flower'],
+    options: ['☕', '📖', '🔑', '🌸', '☂️', 'Tea', 'Book', 'Key', 'Flower', 'Umbrella'],
   },
+
+  // 5. FOLLOW THE RULE
   {
-    id: 'exp-qc-1', type: 'quick-choice', prompt: 'Tap the telephone.',
-    sequence: [], answer: '📞',
-    targetItems: ['🔑', '📞', '📖', '☕', '🌸', '☂️', '🪑', '💡'],
-    options: ['🔑', '📞', '📖', '☕', '🌸', '☂️', '🪑', '💡'],
-  },
-  {
-    id: 'exp-rs-1', type: 'rule-switch', prompt: 'Tap the GREEN shape.',
-    sequence: [], answer: '🟢',
+    id: 'exp-rs-1', type: 'rule-switch', prompt: 'Tap the RED shape.',
+    sequence: [], answer: '🔴',
     options: ['🔴', '🔵', '🟢', '🟡'],
-    ruleChanges: { from: 'Tap the GREEN shape.', to: 'Now tap the TRIANGLE.', changeAt: 2 },
+    ruleChanges: { from: 'Tap the RED shape.', to: 'Now tap the CIRCLE.', changeAt: 3 },
+  },
+
+  // 6. COMPLETE THE STORY
+  {
+    id: 'exp-cts-1', type: 'sequence-completion', prompt: 'What comes next?',
+    sequence: [' egg', '🐣', '🐥', '🐔'],
+    answer: '🐔',
+    scenarioLabel: 'egg → chick → ?',
+    options: [' egg', '🐣', '🐥', '🐔'],
+  },
+
+  // 7. QUICK FIND
+  {
+    id: 'exp-qf-1', type: 'quick-choice', prompt: 'Find the bottle.',
+    sequence: [], answer: '🍶',
+    targetItems: ['🔑', '🍶', '📖', '☕', '🌸', '☂️', '🪑', '💡'],
+    options: ['🔑', '🍶', '📖', '☕', '🌸', '☂️', '🪑', '💡'],
   },
 ]
 
-// ─── Difficulty 5 ───────────────────────────────────────────────
+// ─── Difficulty 5 (Advanced) ───────────────────────────────────
 
 const advanced: ChallengeConfig[] = [
+  // 1. GARDEN SEARCH
   {
-    id: 'adv-wcn-1', type: 'what-comes-next', prompt: 'What comes next?',
-    sequence: ['🍎', '🍌', '☕', '📖', '🔑', '🌸', '🍎', '🍌'], answer: '☕',
-    options: ['🍎', '🍌', '☕', '📖', '🔑', '🌸', '☂️'],
-  },
-  {
-    id: 'adv-fdo-1', type: 'find-different', prompt: 'Find the different one.',
-    sequence: [], answer: '🌙',
-    grid: ['☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
-    options: ['☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
-  },
-  {
-    id: 'adv-tf-1', type: 'target-find', prompt: 'Find all the keys.',
+    id: 'adv-gs-1', type: 'target-find', prompt: 'Find all the keys.',
     sequence: [], answer: '🔑',
     targetItems: ['🔑', '📖', '☕', '🔑', '🌸', '🔑', '🪑', '🍌', '🔑', '📞', '🔑', '💡'],
     targetIndices: [0, 3, 5, 8, 10],
     options: ['🔑', '📖', '☕', '🌸'],
   },
+
+  // 2. FIND WHAT CHANGED
   {
-    id: 'adv-sc-1', type: 'sequence-completion', prompt: 'What comes next?',
-    sequence: ['A', 'B', 'C', 'A', 'B', 'C', 'A', 'B', 'C', 'A'], answer: 'B',
-    options: ['A', 'B', 'C', 'D'],
+    id: 'adv-fwc-1', type: 'find-different', prompt: 'What changed?',
+    sequence: [], answer: '📚',
+    grid: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '🍌', '💡', '🍽️'],
+    beforeItems: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '🍌', '💡', '🍽️'],
+    afterItems: ['☕', '📚', '🔑', '🌸', '🪑', '📞', '🍌', '💡', '🍽️'],
+    changedIndex: 1,
+    options: ['☕', '📖', '🔑', '🌸', '🪑', '📞', '🍌', '💡', '🍽️'],
   },
+
+  // 3. ODD ONE OUT
   {
-    id: 'adv-np-1', type: 'number-pattern', prompt: 'What comes next?',
-    sequence: ['1', '4', '9', '16'], answer: '25', options: ['20', '25', '36', '16'],
+    id: 'adv-ooo-1', type: 'find-different', prompt: 'Find the different one.',
+    sequence: [], answer: '🌙',
+    grid: ['☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
+    options: ['☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '🌙', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️', '☀️'],
   },
+
+  // 4. MATCHING PAIRS
   {
     id: 'adv-mp-1', type: 'match-pair', prompt: 'Match the pairs.',
     sequence: [], answer: '',
     pairs: [
-      { left: '🍎', right: 'Apple' }, { left: '☕', right: 'Cup' },
-      { left: '📖', right: 'Book' }, { left: '🔑', right: 'Key' },
-      { left: '🌸', right: 'Flower' }, { left: '☂️', right: 'Umbrella' },
+      { left: '☕', right: 'Tea' },
+      { left: '📖', right: 'Book' },
+      { left: '🔑', right: 'Key' },
+      { left: '🌸', right: 'Flower' },
+      { left: '☂️', right: 'Umbrella' },
+      { left: '👟', right: 'Shoes' },
     ],
-    options: ['🍎', '☕', '📖', '🔑', '🌸', '☂️', 'Apple', 'Cup', 'Book', 'Key', 'Flower', 'Umbrella'],
+    options: ['☕', '📖', '🔑', '🌸', '☂️', '👟', 'Tea', 'Book', 'Key', 'Flower', 'Umbrella', 'Shoes'],
   },
+
+  // 5. FOLLOW THE RULE
   {
-    id: 'adv-qc-1', type: 'quick-choice', prompt: 'Tap the spoon.',
-    sequence: [], answer: '🥄',
-    targetItems: ['🔑', '🥄', '📖', '☕', '🌸', '☂️', '🪑', '💡', '🪑'],
-    options: ['🔑', '🥄', '📖', '☕', '🌸', '☂️', '🪑', '💡'],
-  },
-  {
-    id: 'adv-rs-1', type: 'rule-switch', prompt: 'Tap the RED shape.',
-    sequence: [], answer: '🔴',
+    id: 'adv-rs-1', type: 'rule-switch', prompt: 'Tap the BLUE shape.',
+    sequence: [], answer: '🔵',
     options: ['🔴', '🔵', '🟢', '🟡'],
-    ruleChanges: { from: 'Tap the RED shape.', to: 'Now tap the CIRCLE.', changeAt: 3 },
+    ruleChanges: { from: 'Tap the BLUE shape.', to: 'Now tap the SQUARE.', changeAt: 3 },
   },
+
+  // 6. COMPLETE THE STORY
   {
-    id: 'adv-vs-1', type: 'visual-sequence', prompt: 'Watch the sequence carefully.',
-    sequence: ['🌸', '🔑', '📖', '☕'], answer: 'key',
-    options: ['flower', 'key', 'book', 'cup'],
+    id: 'adv-cts-1', type: 'sequence-completion', prompt: 'What comes next?',
+    sequence: ['🌱', '🌿', '🌳'],
+    answer: '🌳',
+    scenarioLabel: 'sprout → plant → ?',
+    options: ['🌱', '🌿', '🌳', '☁️'],
   },
+
+  // 7. QUICK FIND
   {
-    id: 'adv-sa-1', type: 'selective-attention', prompt: 'Tap only the cups.',
-    sequence: [], answer: '☕',
-    targetItems: ['📖', '☕', '🔑', '☕', '🌸', '☕', '🪑'],
-    targetIndices: [1, 3, 5],
-    options: ['☕'],
-  },
-  {
-    id: 'adv-wm-1', type: 'working-memory-choice', prompt: 'Remember: Flower means YES.',
-    sequence: [], answer: 'Flower',
-    options: ['Flower', 'Book', 'Key', 'Cup'],
+    id: 'adv-qf-1', type: 'quick-choice', prompt: 'Find the hat.',
+    sequence: [], answer: '🎩',
+    targetItems: ['🔑', '🎩', '📖', '☕', '🌸', '☂️', '🪑', '💡', '🪑'],
+    options: ['🔑', '🎩', '📖', '☕', '🌸', '☂️', '🪑', '💡'],
   },
 ]
 
@@ -378,19 +440,24 @@ function validateChallenge(c: ChallengeConfig): boolean {
 
 /**
  * Get a set of challenges for one session.
- * Picks 8 challenges from the pool, ensuring type variety.
- * Validates each challenge before including it.
+ * Picks 7 challenges from the pool, ensuring type variety.
+ * Uses seeded random for deterministic variation across days.
  */
 export function getSessionChallenges(
   difficulty: DifficultyLevel,
-  count: number = 8,
+  count: number = 7,
+  seed?: number,
 ): ChallengeConfig[] {
   const pool = byDifficulty[difficulty].filter(validateChallenge)
 
   // If pool is too small after validation, use all valid challenges
   if (pool.length <= count) {
-    return [...pool].sort(() => Math.random() - 0.5)
+    const rng = seed !== undefined ? createSeededRandom(seed) : undefined
+    return rng ? rng.shuffle([...pool]) : [...pool].sort(() => Math.random() - 0.5)
   }
+
+  const rng = seed !== undefined ? createSeededRandom(seed) : undefined
+  const shuffleFn = <T,>(arr: T[]) => rng ? rng.shuffle(arr) : arr.sort(() => Math.random() - 0.5)
 
   // Group by type
   const byType = new Map<ChallengeType, ChallengeConfig[]>()
@@ -402,12 +469,12 @@ export function getSessionChallenges(
 
   // First pass: one from each type (up to count)
   const selected: ChallengeConfig[] = []
-  const types = Array.from(byType.keys()).sort(() => Math.random() - 0.5)
+  const types = shuffleFn(Array.from(byType.keys()))
 
   for (const type of types) {
     if (selected.length >= count) break
     const items = byType.get(type)!
-    const pick = items[Math.floor(Math.random() * items.length)]
+    const pick = items[Math.floor(rng ? rng.random() * items.length : Math.random() * items.length)]
     if (pick) selected.push(pick)
   }
 
@@ -416,12 +483,12 @@ export function getSessionChallenges(
     const remaining = pool.filter(
       (c) => !selected.some((s) => s.id === c.id),
     )
-    const shuffled = remaining.sort(() => Math.random() - 0.5)
+    const shuffled = shuffleFn(remaining)
     for (const c of shuffled) {
       if (selected.length >= count) break
       selected.push(c)
     }
   }
 
-  return selected.sort(() => Math.random() - 0.5)
+  return shuffleFn(selected)
 }
