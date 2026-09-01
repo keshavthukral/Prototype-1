@@ -40,7 +40,7 @@ export function FinalResult({
   ]
 
   return (
-    <section className="flex flex-col items-center justify-center text-center px-4 pt-8 pb-12">
+    <section className="flex flex-col items-center justify-center text-center px-4 py-12">
       <div className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
         <CheckCircle2 className="size-8" aria-hidden="true" />
       </div>
@@ -80,7 +80,7 @@ export function FinalResult({
           </Button>
         )}
         <Button size="lg" variant="ghost" onClick={onAgain}>
-          {t('play_again')}
+          {t('try_again')}
         </Button>
       </div>
     </section>

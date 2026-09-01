@@ -32,7 +32,13 @@ export function RoundResult({
       </div>
 
       <h1 className="mt-5 text-2xl font-bold text-foreground">
-        {t('good_effort')}
+        {correct != null && total != null && total > 0
+          ? correct / total >= 0.8
+            ? t('thats_right')
+            : correct / total >= 0.4
+              ? t('good_effort')
+              : t('nice_try')
+          : t('good_effort')}
       </h1>
 
       {correct != null && total != null && (

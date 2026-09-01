@@ -172,6 +172,13 @@ a:focus-visible {
 .page-enter { animation: page-fade-in 200ms ease-out; }
 @media (prefers-reduced-motion: reduce) { .page-enter { animation: none; } }
 
+/* ── Celebration fade pulse ─────────────────────────────── */
+@keyframes celebration-fade {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* ── Responsive: sidebar + centered content layout ──────── */
 /* Caregiver sidebar width */
 @media (min-width: 1024px) {

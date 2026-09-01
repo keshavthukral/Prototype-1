@@ -22,9 +22,10 @@ export interface DailyPerformance {
   }
 
   attention: {
-    visualSearchAccuracy: number
-    patternAccuracy: number
-    matchingAccuracy: number
+    trailConnectAccuracy: number | null
+    cancellationAccuracy: number | null
+    ruleSwitchAccuracy: number | null
+    everydaySequenceAccuracy: number | null
     averageResponseTime: number
   }
 
@@ -69,9 +70,10 @@ export function buildDailyPerformance(params: {
     },
 
     attention: {
-      visualSearchAccuracy: attentionSession?.visualSearchAccuracy ?? 0,
-      patternAccuracy: attentionSession?.patternAccuracy ?? 0,
-      matchingAccuracy: attentionSession?.pairMatchingAccuracy ?? 0,
+      trailConnectAccuracy: attentionSession?.trailConnectAccuracy ?? null,
+      cancellationAccuracy: attentionSession?.cancellationAccuracy ?? null,
+      ruleSwitchAccuracy: attentionSession?.ruleSwitchAccuracy ?? null,
+      everydaySequenceAccuracy: attentionSession?.everydaySequenceAccuracy ?? null,
       averageResponseTime: attentionSession?.averageResponseTime ?? 0,
     },
 

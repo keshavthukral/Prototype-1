@@ -131,10 +131,10 @@ export function analyzeMemorySession(
 // ─── Attention Session Analysis ─────────────────────────────────
 
 export interface AttentionSessionAnalysis {
-  patternAccuracy: number
-  visualSearchAccuracy: number
-  pairMatchingAccuracy: number
-  ruleSwitchAccuracy: number
+  trailConnectAccuracy: number | null
+  cancellationAccuracy: number | null
+  ruleSwitchAccuracy: number | null
+  everydaySequenceAccuracy: number | null
 
   averageResponseTime: number
   errorRate: number
@@ -161,35 +161,18 @@ export function analyzeAttentionSession(
     byType.set(c.challengeType, list)
   }
 
-  // Pattern accuracy (what-comes-next, sequence-completion, number-pattern)
-  const patternTypes: ChallengeType[] = ['what-comes-next', 'sequence-completion', 'number-pattern']
-  const patternChallenges = completed.filter((c) => patternTypes.includes(c.challengeType))
-  const patternCorrect = patternChallenges.filter((c) => c.correct).length
-  const patternAccuracy = patternChallenges.length > 0
-    ? Math.round((patternCorrect / patternChallenges.length) * 100)
-    : 0
+  // Per-type accuracy helpers
+  const accuracyForType = (type: ChallengeType): number | null => {
+    const group = byType.get(type)
+    if (!group || group.length === 0) return null
+    const correct = group.filter((c) => c.correct).length
+    return Math.round((correct / group.length) * 100)
+  }
 
-  // Visual search accuracy (find-different, target-find)
-  const searchTypes: ChallengeType[] = ['find-different', 'target-find']
-  const searchChallenges = completed.filter((c) => searchTypes.includes(c.challengeType))
-  const searchCorrect = searchChallenges.filter((c) => c.correct).length
-  const visualSearchAccuracy = searchChallenges.length > 0
-    ? Math.round((searchCorrect / searchChallenges.length) * 100)
-    : 0
-
-  // Pair matching accuracy
-  const pairChallenges = byType.get('match-pair') ?? []
-  const pairCorrect = pairChallenges.filter((c) => c.correct).length
-  const pairMatchingAccuracy = pairChallenges.length > 0
-    ? Math.round((pairCorrect / pairChallenges.length) * 100)
-    : 0
-
-  // Rule switch accuracy (quick-choice can be used as rule switch proxy)
-  const ruleChallenges = byType.get('quick-choice') ?? []
-  const ruleCorrect = ruleChallenges.filter((c) => c.correct).length
-  const ruleSwitchAccuracy = ruleChallenges.length > 0
-    ? Math.round((ruleCorrect / ruleChallenges.length) * 100)
-    : 0
+  const trailConnectAccuracy = accuracyForType('trail-connect')
+  const cancellationAccuracy = accuracyForType('cancellation')
+  const ruleSwitchAccuracy = accuracyForType('rule-switch')
+  const everydaySequenceAccuracy = accuracyForType('everyday-sequence')
 
   // Average response time
   const responseTimes = completed.map((c) => c.responseTimeMs).filter((t) => t > 0)
@@ -213,10 +196,10 @@ export function analyzeAttentionSession(
     : 0
 
   return {
-    patternAccuracy,
-    visualSearchAccuracy,
-    pairMatchingAccuracy,
+    trailConnectAccuracy,
+    cancellationAccuracy,
     ruleSwitchAccuracy,
+    everydaySequenceAccuracy,
     averageResponseTime,
     errorRate,
     completionRate,

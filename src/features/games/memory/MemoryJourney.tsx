@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Brain, Check, Heart, Lightbulb } from 'lucide-react'
+import { ArrowLeft, Brain, Check, Heart } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { GameShell } from '@/features/games/engine/GameShell'
@@ -38,7 +38,6 @@ import type {
 } from '@/features/games/metrics/types'
 import {
   OBJECT_POOL,
-  buildMemoryRound,
   spatialGridSize,
   sequenceLength,
   viewSeconds as getViewSeconds,
@@ -143,7 +142,6 @@ export function MemoryJourney() {
 
   // Tracking
   const [hints, setHints] = useState(0)
-  const [showHint, setShowHint] = useState(false)
   const [changes, setChanges] = useState(0)
   const [lastSummary, setLastSummary] = useState('')
   const [lastSubtitle, setLastSubtitle] = useState('')
@@ -225,7 +223,8 @@ export function MemoryJourney() {
   // ── Session Start ──
   const startSession = () => {
     usedIdsRef.current = new Set()
-    const delayed = shuffle(OBJECT_POOL).slice(0, 3)
+    const targetCount = difficulty === 1 ? 3 : difficulty === 2 ? 4 : difficulty === 3 ? 5 : 6
+    const delayed = shuffle(OBJECT_POOL).slice(0, targetCount)
     delayed.forEach((d) => usedIdsRef.current.add(d.id))
     setDelayedObjects(delayed)
     collectorRef.current.reset()
@@ -236,7 +235,6 @@ export function MemoryJourney() {
     setSelected(new Set())
     setOrdered([])
     setHints(0)
-    setShowHint(false)
     setChanges(0)
     setSelectedAnswer(null)
     setPersonalQuestion(null)
@@ -259,7 +257,6 @@ export function MemoryJourney() {
       setSelected(new Set())
       setOrdered([])
       setHints(0)
-      setShowHint(false)
       setChanges(0)
       setSelectedAnswer(null)
       setPersonalQuestion(null)
@@ -270,13 +267,21 @@ export function MemoryJourney() {
 
       switch (type) {
         case 'visual-recall': {
-          const excludeIds = [...delayed.map((d) => d.id), ...usedIdsRef.current]
-          const roundConfig = buildMemoryRound(difficulty, excludeIds)
-          roundConfig.targets.forEach((t) => usedIdsRef.current.add(t.id))
-          roundConfig.distractors.forEach((d) => usedIdsRef.current.add(d.id))
-          setConfig(roundConfig)
-          setPhase('memorise')
-          startCountdown(getViewSeconds(difficulty), beginTask)
+          // Use the initial targets directly — no new memorization.
+          // The user already encoded these during the initial encoding screen.
+          const excludeIds = delayed.map((d) => d.id)
+          const distractorPool = OBJECT_POOL.filter(
+            (o) => !excludeIds.includes(o.id) && !usedIdsRef.current.has(o.id),
+          )
+          const distCount = difficulty === 1 ? 2 : difficulty === 2 ? 3 : difficulty === 3 ? 4 : 5
+          const distractors = shuffle(distractorPool).slice(0, distCount)
+          distractors.forEach((d) => usedIdsRef.current.add(d.id))
+
+          const options = shuffle([...delayed, ...distractors])
+          setConfig({ targets: delayed, distractors, options })
+
+          // Go directly to task — no memorise phase needed.
+          beginTask()
           break
         }
 
@@ -367,12 +372,6 @@ export function MemoryJourney() {
     telemetryRef.current.recordChange()
     setChanges((v) => v + 1)
     setOrdered((current) => current.filter((item) => item.id !== id))
-  }
-
-  const useHint = () => {
-    telemetryRef.current.recordHint()
-    setHints((v) => v + 1)
-    setShowHint(true)
   }
 
   // ── Round Completion ──
@@ -681,7 +680,7 @@ export function MemoryJourney() {
     <GameShell
       totalSteps={TOTAL_ROUNDS}
       currentStep={round}
-      showHeader={showHeader}
+      showHeader={showHeader && phase !== 'delayed-preview'}
       celebrate={phase === 'final-result' && accuracy >= 50}
       onBack={() => navigate(mode === 'daily' ? '/patient' : '/patient/games')}
     >
@@ -699,7 +698,16 @@ export function MemoryJourney() {
 
       {/* ── DELAYED PREVIEW ── */}
       {phase === 'delayed-preview' && config && (
-        <div className="flex flex-col items-center justify-center pt-4 pb-8">
+        <div className="flex flex-col items-center justify-center px-4 pt-4 pb-8">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-4 self-start"
+            onClick={goBack}
+          >
+            <ArrowLeft data-icon="inline-start" />
+            {t('back')}
+          </Button>
           <ViewTimer
             seconds={viewTimeLeft}
             title={t('remember_later')}
@@ -717,7 +725,7 @@ export function MemoryJourney() {
 
       {/* ── MEMORISE PHASE ── */}
       {phase === 'memorise' && (
-        <div className="flex flex-col items-center justify-center pt-4 pb-8">
+        <div className="flex flex-col items-center justify-center px-4 pt-4 pb-8">
           <ViewTimer
             seconds={viewTimeLeft}
             title={
@@ -753,9 +761,6 @@ export function MemoryJourney() {
           config={config}
           selected={selected}
           onToggle={toggleSelected}
-          hints={hints}
-          showHint={showHint}
-          onHint={useHint}
           onSubmit={submitObjectLike}
         />
       )}
@@ -801,9 +806,6 @@ export function MemoryJourney() {
           config={config}
           selected={selected}
           onToggle={toggleSelected}
-          hints={hints}
-          showHint={showHint}
-          onHint={useHint}
           onSubmit={submitDelayedRecall}
         />
       )}
@@ -852,22 +854,16 @@ export function MemoryJourney() {
 // ─── Sub-tasks ──────────────────────────────────────────────────
 
 function ObjectRecallTask({
-  title, config, selected, onToggle, hints, showHint, onHint, onSubmit,
+  title, config, selected, onToggle, onSubmit,
 }: {
   title: string; config: MemoryRoundConfig; selected: Set<string>
-  onToggle: (id: string) => void; hints: number; showHint: boolean
-  onHint: () => void; onSubmit: () => void
+  onToggle: (id: string) => void; onSubmit: () => void
 }) {
   const { t } = useLanguage()
   return (
-    <section className="flex flex-col">
-      <h1 className="mt-4 text-center text-2xl font-bold text-foreground">{title}</h1>
-      {showHint && (
-        <p className="mx-auto mt-4 rounded-2xl bg-primary/10 px-5 py-3 text-base font-medium text-primary">
-          {t('memory_hint')} {t('hint_count').replace('{count}', String(config.targets.length))}
-        </p>
-      )}
-      <div className="mx-auto mt-6 grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
+    <section className="flex flex-col items-center">
+      <h1 className="mt-3 text-center text-2xl font-bold text-foreground">{title}</h1>
+      <div className="mx-auto mt-6 grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-3">
         {config.options.map((item) => {
           const chosen = selected.has(item.id)
           return (
@@ -879,14 +875,9 @@ function ObjectRecallTask({
           )
         })}
       </div>
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 pt-7 sm:flex-row">
-        <Button variant="outline" size="lg" className="flex-1 text-lg" onClick={onHint} disabled={showHint}>
-          <Lightbulb data-icon="inline-start" />{t('hint')} {hints > 0 ? `(${hints})` : ''}
-        </Button>
-        <Button size="lg" className="flex-1 text-lg" onClick={onSubmit} disabled={selected.size === 0}>
-          {t('submit_answer')}
-        </Button>
-      </div>
+      <Button size="lg" className="mx-auto mt-6 w-full max-w-sm text-lg" onClick={onSubmit} disabled={selected.size === 0}>
+        {t('submit_answer')}
+      </Button>
     </section>
   )
 }
@@ -936,7 +927,7 @@ function OrderTask({
     <section className="flex flex-col">
       <h1 className="mt-4 text-center text-2xl font-bold text-foreground">{t('order_instruction')}</h1>
       <p className="mt-2 text-center text-base text-muted-foreground">{t('order_help')}</p>
-      <div className="mx-auto mt-6 flex w-full max-w-3xl flex-wrap justify-center gap-3">
+      <div className="mx-auto mt-6 flex w-full max-w-xl flex-wrap justify-center gap-3">
         {config.options.map((item) => (
           <button key={item.id} onClick={() => onAdd(item)}
             disabled={ordered.some((v) => v.id === item.id)}
@@ -945,7 +936,7 @@ function OrderTask({
           </button>
         ))}
       </div>
-      <ol className="mx-auto mt-6 grid w-full max-w-3xl gap-3 sm:grid-cols-2">
+      <ol className="mx-auto mt-6 grid w-full max-w-xl gap-3 sm:grid-cols-2">
         {Array.from({ length: config.targets.length }, (_, index) => {
           const item = ordered[index]
           return (
@@ -961,7 +952,7 @@ function OrderTask({
       </ol>
       <Button size="lg" className="mx-auto w-full max-w-sm text-lg"
         disabled={ordered.length !== config.targets.length} onClick={onSubmit}>
-        {t('check_order')}
+        {t('submit_answer')}
       </Button>
     </section>
   )
@@ -978,8 +969,8 @@ function PersonalMemoryTask({
   return (
     <section className="flex flex-col items-center justify-center text-center">
       <div className="flex size-20 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Heart className="size-10" /></div>
-        <h1 className="mt-5 text-2xl font-bold text-foreground">Personal memories are being prepared.</h1>
-        <p className="mt-3 text-lg text-muted-foreground">This round will be available soon.</p>
+        <h1 className="mt-5 text-2xl font-bold text-foreground">No personal memory available</h1>
+        <p className="mt-3 text-lg text-muted-foreground">Moving on to the next exercise.</p>
         <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={onSubmit}>{t('next_round')}</Button>
       </section>
     )

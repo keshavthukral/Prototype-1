@@ -78,14 +78,10 @@ export type MemoryRoundMetric =
 // ─── Attention challenge metrics ────────────────────────────────
 
 export type ChallengeType =
-  | 'what-comes-next'
-  | 'find-different'
-  | 'target-find'
-  | 'sequence-completion'
-  | 'number-pattern'
-  | 'match-pair'
-  | 'quick-choice'
+  | 'trail-connect'
+  | 'cancellation'
   | 'rule-switch'
+  | 'everyday-sequence'
 
 export interface ChallengeMetric {
   challengeId: string

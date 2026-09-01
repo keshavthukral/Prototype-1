@@ -1,25 +1,19 @@
 /**
- * Attention Adventure — 7 short challenges from 8 types.
+ * Attention Adventure — Session controller.
  *
- * TYPE A: What Comes Next (visual sequences)
- * TYPE B: Find the Different One
- * TYPE C: Target Find (12–20 items)
- * TYPE D: Sequence Completion (A-B-C pattern)
- * TYPE E: Simple Number Pattern
- * TYPE F: Match the Pair
- * TYPE G: Quick Choice
- * TYPE H: Rule Switch
+ * Generates a 7-task session from four cognitive task types,
+ * dispatches each to its own task component, collects metrics,
+ * and shows the final result.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, Grid3X3, Lightbulb } from 'lucide-react'
+import { Check, Grid3X3 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { GameShell } from '@/features/games/engine/GameShell'
 import { GameIntro } from '@/features/games/engine/GameIntro'
 import { FinalResult } from '@/features/games/engine/FinalResult'
-import { TelemetryTracker } from '@/features/games/engine/telemetry'
 import { AttentionMetricsCollector } from '@/features/games/metrics/collector'
 import type { ChallengeMetric } from '@/features/games/metrics/types'
 import { getSessionChallenges, type ChallengeConfig } from '@/features/games/data/challenges'
@@ -35,6 +29,12 @@ import {
 } from '@/lib/repositories/game-session'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { useLanguage } from '@/lib/i18n/language-context'
+
+// ── Task components ──
+import { TrailConnect } from '@/features/games/attention/tasks/TrailConnect'
+import { Cancellation } from '@/features/games/attention/tasks/Cancellation'
+import { RuleSwitch } from '@/features/games/attention/tasks/RuleSwitch'
+import { EverydaySequence } from '@/features/games/attention/tasks/EverydaySequence'
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -52,32 +52,17 @@ export function AttentionAdventure() {
   const mode: GameMode =
     searchParams.get('mode') === 'daily' ? 'daily' : 'practice'
 
-  // ── State ──
+  // ── Session state ──
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(1)
   const [ready, setReady] = useState(false)
   const [phase, setPhase] = useState<Phase>('intro')
   const [index, setIndex] = useState(0)
   const [challenges, setChallenges] = useState<ChallengeConfig[]>([])
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  const [correct, setCorrect] = useState(false)
   const [metrics, setMetrics] = useState<ChallengeMetric[]>([])
-  const [hints, setHints] = useState(0)
-  const [showHint, setShowHint] = useState(false)
-  const [changes, setChanges] = useState(0)
+  const [correct, setCorrect] = useState(false)
 
-  // Match-pair state
-  const [matchSelected, setMatchSelected] = useState<string[]>([])
-  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set())
-  // Target-find state
-  const [targetFindSelected, setTargetFindSelected] = useState<Set<number>>(new Set())
-
-  // Rule-switch state
-  const [ruleSwitchIndex, setRuleSwitchIndex] = useState(0)
-  const [currentPrompt, setCurrentPrompt] = useState('')
-
-  // Session
+  // Session collector
   const collectorRef = useRef(new AttentionMetricsCollector())
-  const telemetryRef = useRef(new TelemetryTracker())
 
   // ── Load difficulty ──
   useEffect(() => {
@@ -97,160 +82,33 @@ export function AttentionAdventure() {
     })()
   }, [user?.id])
 
-  // ── Helpers ──
-  const beginChallenge = useCallback((nextIndex: number) => {
-    setIndex(nextIndex)
-    setSelectedIndex(null)
-    setChanges(0)
-    setHints(0)
-    setShowHint(false)
-    setMatchSelected([])
-    setMatchedPairs(new Set())
-    setTargetFindSelected(new Set())
-    setRuleSwitchIndex(0)
-
-    const c = challenges[nextIndex]
-    if (c?.type === 'rule-switch' && c.ruleChanges) {
-      setCurrentPrompt(c.ruleChanges.from)
-    } else if (c) {
-      setCurrentPrompt(c.prompt)
-    }
-
-    telemetryRef.current.start(difficulty, c?.type ?? 'unknown')
-    setPhase('challenge')
-  }, [challenges, difficulty])
-
   // ── Start Game ──
   const startGame = () => {
     const pool = getSessionChallenges(difficulty, TOTAL_CHALLENGES)
     setChallenges(pool)
     setMetrics([])
+    setIndex(0)
     collectorRef.current.reset()
-    beginChallenge(0)
+    setPhase('challenge')
   }
 
-  const current = challenges[index]
-
-  // ── Selection ──
-  const selectAnswer = (answerIndex: number) => {
-    telemetryRef.current.recordInteraction()
-    if (selectedIndex !== null && selectedIndex !== answerIndex)
-      setChanges((v) => v + 1)
-    setSelectedIndex(answerIndex)
-  }
-
-  const useHint = () => {
-    telemetryRef.current.recordHint()
-    setHints((v) => v + 1)
-    setShowHint(true)
-  }
-
-  // ── Target Find toggle ──
-  const toggleTargetFind = (itemIndex: number) => {
-    telemetryRef.current.recordInteraction()
-    setTargetFindSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(itemIndex)) next.delete(itemIndex)
-      else next.add(itemIndex)
-      return next
-    })
-    setChanges((v) => v + 1)
-  }
-
-  // ── Rule Switch ──
-  const handleRuleSwitchAnswer = (answerIndex: number) => {
-    telemetryRef.current.recordInteraction()
-    if (selectedIndex !== null && selectedIndex !== answerIndex)
-      setChanges((v) => v + 1)
-    setSelectedIndex(answerIndex)
-
-    if (!current?.ruleChanges) return
-    const newRuleIdx = ruleSwitchIndex + 1
-    if (newRuleIdx >= (current.ruleChanges.changeAt ?? 2)) {
-      setCurrentPrompt(current.ruleChanges.to)
-    }
-    setRuleSwitchIndex(newRuleIdx)
-  }
-
-  // ── Match pair handlers ──
-  const handleMatchSelect = (item: string) => {
-    if (!current) return
-    telemetryRef.current.recordInteraction()
-    if (matchedPairs.has(item)) return
-
-    const next = [...matchSelected, item]
-    setMatchSelected(next)
-    setChanges((v) => v + 1)
-
-    if (next.length === 2) {
-      const pair = current.pairs?.find(
-        (p) =>
-          (p.left === next[0] && p.right === next[1]) ||
-          (p.left === next[1] && p.right === next[0]),
-      )
-      if (pair) {
-        const newMatched = new Set(matchedPairs)
-        newMatched.add(pair.left)
-        newMatched.add(pair.right)
-        setMatchedPairs(newMatched)
-      }
-      setTimeout(() => setMatchSelected([]), 400)
-    }
-  }
-
-  // ── Record Challenge ──
-  const recordChallenge = (completionState: 'completed' | 'skipped') => {
-    if (!current) return
-
-    let isCorrect = false
-    if (completionState === 'completed') {
-      if (current.type === 'match-pair') {
-        const totalPairs = current.pairs?.length ?? 0
-        isCorrect = matchedPairs.size / 2 >= totalPairs
-      } else if (current.type === 'target-find') {
-        const targets = current.targetIndices ?? []
-        const selected = [...targetFindSelected]
-        const correctTargets = selected.filter((i) => targets.includes(i)).length
-        isCorrect = correctTargets === targets.length && selected.length === targets.length
-      } else if (current.type === 'rule-switch') {
-        isCorrect = selectedIndex !== null && current.options[selectedIndex] === current.answer
-      } else {
-        isCorrect =
-          selectedIndex !== null &&
-          current.options[selectedIndex] === current.answer
-      }
-    }
-
-    const record = completionState === 'skipped'
-      ? telemetryRef.current.skip()
-      : telemetryRef.current.complete(isCorrect, isCorrect ? 100 : 0)
-
-    const metric: ChallengeMetric = {
-      challengeId: current.id,
-      challengeType: current.type,
-      correct: isCorrect,
-      responseTimeMs: record.completionTimeMs,
-      timeToFirstInteractionMs: record.timeToFirstInteractionMs,
-      hints,
-      skipped: completionState === 'skipped',
-      changedAnswers: changes,
-      difficulty,
-    }
-
+  // ── Challenge complete handler (called by task components) ──
+  const handleChallengeComplete = useCallback((metric: ChallengeMetric) => {
     collectorRef.current.addChallenge(metric)
-    setMetrics((v) => [...v, metric])
-    setCorrect(isCorrect)
+    setMetrics((prev) => [...prev, metric])
+    setCorrect(metric.correct)
     setPhase('feedback')
-  }
+  }, [])
 
   // ── Next Challenge ──
-  const nextChallenge = () => {
+  const nextChallenge = useCallback(() => {
     if (index + 1 >= TOTAL_CHALLENGES) {
       persistAndFinish()
     } else {
-      beginChallenge(index + 1)
+      setIndex((i) => i + 1)
+      setPhase('challenge')
     }
-  }
+  }, [index])
 
   // ── Persist & Finish ──
   const persistAndFinish = () => {
@@ -287,6 +145,7 @@ export function AttentionAdventure() {
   }
 
   // ── Computed ──
+  const current = challenges[index]
   const correctCount = metrics.filter((m) => m.correct).length
   const accuracy = Math.round((correctCount / TOTAL_CHALLENGES) * 100)
   const encouragingMessage =
@@ -321,7 +180,7 @@ export function AttentionAdventure() {
         <GameIntro
           icon={Grid3X3}
           title="Pattern & Attention"
-          description="Short visual questions. Take your time."
+          description="Short visual exercises. Take your time."
           backLabel={mode === 'daily' ? t('home') : t('activities')}
           onBack={goBack}
           onStart={startGame}
@@ -329,25 +188,14 @@ export function AttentionAdventure() {
       )}
 
       {phase === 'challenge' && current && (
-        <ChallengeView
+        <ChallengeDispatch
           challenge={current}
-          selectedIndex={selectedIndex}
-          currentPrompt={currentPrompt}
-          showHint={showHint}
-          hints={hints}
-          matchSelected={matchSelected}
-          matchedPairs={matchedPairs}
-          targetFindSelected={targetFindSelected}
-          onSelect={current.type === 'rule-switch' ? handleRuleSwitchAnswer : selectAnswer}
-          onMatchSelect={handleMatchSelect}
-          onTargetFindToggle={toggleTargetFind}
-          onHint={useHint}
-          onSubmit={() => recordChallenge('completed')}
-          onSkip={() => recordChallenge('skipped')}
+          difficulty={difficulty}
+          onComplete={handleChallengeComplete}
         />
       )}
 
-      {phase === 'feedback' && current && (
+      {phase === 'feedback' && (
         <Feedback
           correct={correct}
           skipped={metrics[metrics.length - 1]?.skipped ?? false}
@@ -371,7 +219,7 @@ export function AttentionAdventure() {
       )}
 
       {phase === 'daily-complete' && (
-        <section className="flex flex-col items-center justify-center text-center px-4 pt-8 pb-12">
+        <section className="flex flex-col items-center justify-center text-center px-4 py-12">
           <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Check className="size-9" />
           </div>
@@ -386,130 +234,53 @@ export function AttentionAdventure() {
   )
 }
 
-// ─── Challenge View ─────────────────────────────────────────────
+// ─── Challenge Dispatch ─────────────────────────────────────────
 
-function ChallengeView({
-  challenge, selectedIndex, currentPrompt, showHint, hints,
-  matchSelected, matchedPairs, targetFindSelected,
-  onSelect, onMatchSelect, onTargetFindToggle, onHint, onSubmit, onSkip,
+function ChallengeDispatch({
+  challenge,
+  difficulty,
+  onComplete,
 }: {
-  challenge: ChallengeConfig; selectedIndex: number | null; currentPrompt: string
-  showHint: boolean; hints: number; matchSelected: string[]; matchedPairs: Set<string>
-  targetFindSelected: Set<number>
-  onSelect: (index: number) => void; onMatchSelect: (item: string) => void
-  onTargetFindToggle: (index: number) => void
-  onHint: () => void; onSubmit: () => void; onSkip: () => void
+  challenge: ChallengeConfig
+  difficulty: DifficultyLevel
+  onComplete: (metric: ChallengeMetric) => void
 }) {
-  const { t } = useLanguage()
-  const isOddOneOut = challenge.type === 'find-different'
-  const isMatchPair = challenge.type === 'match-pair'
-  const isTargetFind = challenge.type === 'target-find'
-
-  const allPairsMatched =
-    isMatchPair && challenge.pairs && matchedPairs.size >= challenge.pairs.length * 2
-
-  return (
-    <section className="flex flex-col">        <h1 className="mt-3 text-center text-2xl font-bold text-foreground">{currentPrompt}</h1>
-
-      {showHint && (
-        <p className="mx-auto mt-4 rounded-2xl bg-primary/10 px-5 py-3 text-base font-medium text-primary">
-          {isOddOneOut ? 'Look carefully at each shape.' : isMatchPair ? 'Tap two cards that go together.' : 'Look for what repeats or changes.'}
-        </p>
-      )}
-
-      {/* Visual sequence */}
-      {!isOddOneOut && !isMatchPair && !isTargetFind && challenge.sequence.length > 0 && (
-        <div className="mx-auto mt-8 flex min-h-32 w-full max-w-3xl flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-card p-5" aria-label="Visual sequence">
-          {challenge.sequence.map((item, i) => (
-            <span key={`${item}-${i}`} className="flex size-14 items-center justify-center rounded-xl bg-secondary text-3xl font-bold text-foreground">{item}</span>
-          ))}
-          <span className="flex size-14 items-center justify-center rounded-xl border-2 border-dashed border-primary bg-primary/10 text-3xl font-bold text-primary">?</span>
-        </div>
-      )}
-
-      {/* Find Different grid */}
-      {isOddOneOut && challenge.grid && (
-        <div className="mx-auto mt-8 grid w-full max-w-md gap-3"
-          style={{ gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(challenge.grid.length))}, 1fr)` }}>
-          {challenge.grid.map((item, i) => {
-            const isChosen = selectedIndex === i
-            return (
-              <button key={i} onClick={() => onSelect(i)} aria-pressed={isChosen}
-                className={`relative flex aspect-square cursor-pointer items-center justify-center rounded-2xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isChosen ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
-                {item}
-                {isChosen && <Check className="absolute right-2 top-2 size-5 text-primary" />}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Target Find — toggleable items */}
-      {isTargetFind && challenge.targetItems && (
-        <div className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-card p-5">
-          {challenge.targetItems.map((item, i) => {
-            const isSelected = targetFindSelected.has(i)
-            return (
-              <button key={i} onClick={() => onTargetFindToggle(i)} aria-pressed={isSelected}
-                className={`flex size-14 cursor-pointer items-center justify-center rounded-2xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isSelected ? 'border-primary bg-primary/10' : 'border-transparent bg-secondary hover:border-primary/30'}`}>
-                {item}
-                {isSelected && <Check className="absolute -right-1 -top-1 size-4 text-primary" />}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Match Pair */}
-      {isMatchPair && challenge.pairs && (
-        <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-4 gap-3">
-          {challenge.options.map((item) => {
-            const isMatched = matchedPairs.has(item)
-            const isSelected = matchSelected.includes(item)
-            return (
-              <button key={item} onClick={() => onMatchSelect(item)} disabled={isMatched} aria-pressed={isSelected}
-                className={`relative flex h-20 cursor-pointer items-center justify-center rounded-2xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 ${isMatched ? 'border-success bg-success/10' : isSelected ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
-                {item}
-                {isMatched && <Check className="absolute right-1 top-1 size-4 text-success" />}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Multiple choice */}
-      {!isOddOneOut && !isMatchPair && !isTargetFind && (
-        <div className="mx-auto mt-8 grid w-full max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
-          {challenge.options.map((option, optionIndex) => {
-            const isSelected = selectedIndex === optionIndex
-            return (
-              <button key={`${option}-${optionIndex}`} onClick={() => onSelect(optionIndex)}
-                aria-pressed={isSelected} aria-label={`Answer ${optionIndex + 1}: ${option}`}
-                className="relative flex min-h-[5.5rem] cursor-pointer items-center justify-center rounded-2xl border-2 border-border bg-card text-3xl font-bold text-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary">
-                {option}
-                {isSelected && <Check className="absolute right-2 top-2 size-5 text-primary" />}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 pt-6 sm:flex-row">
-        <Button variant="outline" size="lg" className="text-base" onClick={onHint} disabled={showHint}>
-          <Lightbulb data-icon="inline-start" />{t('hint')} {hints > 0 ? `(${hints})` : ''}
-        </Button>
-        <Button variant="ghost" size="lg" className="text-base" onClick={onSkip}>{t('skip')}</Button>
-        <Button size="lg" className="flex-1 text-base" onClick={onSubmit}
-          disabled={!isMatchPair && !isTargetFind && selectedIndex === null}>
-          {isMatchPair
-            ? allPairsMatched ? t('check_answer') : `${matchedPairs.size / 2} / ${challenge.pairs?.length ?? 0} matched`
-            : isTargetFind
-              ? `${targetFindSelected.size} selected`
-              : t('check_answer')}
-        </Button>
-      </div>
-    </section>
-  )
+  switch (challenge.type) {
+    case 'trail-connect':
+      return (
+        <TrailConnect
+          config={challenge}
+          difficulty={difficulty}
+          onComplete={onComplete}
+        />
+      )
+    case 'cancellation':
+      return (
+        <Cancellation
+          config={challenge}
+          difficulty={difficulty}
+          onComplete={onComplete}
+        />
+      )
+    case 'rule-switch':
+      return (
+        <RuleSwitch
+          config={challenge}
+          difficulty={difficulty}
+          onComplete={onComplete}
+        />
+      )
+    case 'everyday-sequence':
+      return (
+        <EverydaySequence
+          config={challenge}
+          difficulty={difficulty}
+          onComplete={onComplete}
+        />
+      )
+    default:
+      return null
+  }
 }
 
 // ─── Feedback ───────────────────────────────────────────────────
@@ -519,7 +290,7 @@ function Feedback({ correct, skipped, last, onNext }: {
 }) {
   const { t } = useLanguage()
   return (
-    <section className="flex flex-col items-center justify-center text-center px-4 pt-8 pb-12">
+    <section className="flex flex-col items-center justify-center text-center px-4 py-12">
       <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Check className="size-9" />
       </div>
@@ -530,7 +301,7 @@ function Feedback({ correct, skipped, last, onNext }: {
         <p className="mt-2 text-base text-muted-foreground">Keep trying — you are doing well.</p>
       )}
       <Button size="lg" className="mt-8 min-h-16 w-full max-w-sm text-lg" onClick={onNext}>
-        {last ? t('see_results') : t('next_question')}
+        {last ? t('see_results') : t('next_task')}
       </Button>
     </section>
   )
