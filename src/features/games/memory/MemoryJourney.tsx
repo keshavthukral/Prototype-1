@@ -76,7 +76,6 @@ const ROUND_TYPES: RoundType[] = [
 
 type Phase =
   | 'intro'
-  | 'delayed-preview'
   | 'memorise'
   | 'task'
   | 'round-result'
@@ -166,6 +165,7 @@ export function MemoryJourney() {
   const telemetryRef = useRef(new TelemetryTracker())
 
   // Refs
+  const usedIdsRef = useRef(new Set<string>())
   const taskStartedAt = useRef(0)
   const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -221,17 +221,17 @@ export function MemoryJourney() {
 
   // ── Session Start ──
   const startSession = () => {
+    usedIdsRef.current = new Set()
     const delayed = shuffle(OBJECT_POOL).slice(0, 3)
+    delayed.forEach((d) => usedIdsRef.current.add(d.id))
     setDelayedObjects(delayed)
     collectorRef.current.reset()
     setMetrics([])
     setTotalCorrect(0)
     setTotalPossible(0)
 
-    setPhase('delayed-preview')
-    startCountdown(getViewSeconds(difficulty), () => {
-      prepareRound(0, delayed)
-    })
+    // Go directly to Round 1 — no separate delayed-preview step
+    prepareRound(0, delayed)
   }
 
   // ── Prepare Round ──
@@ -252,7 +252,10 @@ export function MemoryJourney() {
 
       switch (type) {
         case 'visual-recall': {
-          const roundConfig = buildMemoryRound(difficulty, delayed.map((d) => d.id))
+          const excludeIds = [...delayed.map((d) => d.id), ...usedIdsRef.current]
+          const roundConfig = buildMemoryRound(difficulty, excludeIds)
+          roundConfig.targets.forEach((t) => usedIdsRef.current.add(t.id))
+          roundConfig.distractors.forEach((d) => usedIdsRef.current.add(d.id))
           setConfig(roundConfig)
           setPhase('memorise')
           startCountdown(getViewSeconds(difficulty), beginTask)
@@ -262,8 +265,10 @@ export function MemoryJourney() {
         case 'spatial': {
           const count = spatialGridSize(difficulty)
           const qCount = spatialQuestions(difficulty)
-          const shuffledPool = shuffle(OBJECT_POOL)
+          const available = OBJECT_POOL.filter((o) => !usedIdsRef.current.has(o.id))
+          const shuffledPool = shuffle(available)
           const gridItems = shuffledPool.slice(0, count)
+          gridItems.forEach((g) => usedIdsRef.current.add(g.id))
           const questions = shuffle([...gridItems]).slice(0, qCount)
           setSpatial({
             grid: gridItems,
@@ -281,7 +286,9 @@ export function MemoryJourney() {
 
         case 'order': {
           const count = sequenceLength(difficulty)
-          const targets = shuffle(OBJECT_POOL).slice(0, count)
+          const available = OBJECT_POOL.filter((o) => !usedIdsRef.current.has(o.id))
+          const targets = shuffle(available).slice(0, count)
+          targets.forEach((t) => usedIdsRef.current.add(t.id))
           setConfig({ targets, distractors: [], options: shuffle(targets) })
           setPhase('memorise')
           startCountdown(getViewSeconds(difficulty), beginTask)
@@ -302,16 +309,24 @@ export function MemoryJourney() {
         }
 
         case 'delayed': {
-          const options = shuffle([
-            ...delayed,
-            ...shuffle(
+          // Show the delayed objects for memorization first
+          setConfig({ targets: delayed, distractors: [], options: delayed })
+          setPhase('memorise')
+          startCountdown(getViewSeconds(difficulty), () => {
+            // After memorize timer, build recognition options with distractors
+            const distractorPool = shuffle(
               OBJECT_POOL.filter(
-                (item) => !delayed.some((d) => d.id === item.id),
+                (item) => !delayed.some((d) => d.id === item.id) && !usedIdsRef.current.has(item.id),
               ),
-            ).slice(0, difficulty + 1),
-          ])
-          setConfig({ targets: delayed, distractors: [], options })
-          beginTask()
+            ).slice(0, difficulty + 1)
+            const recognitionOptions = shuffle([
+              ...delayed,
+              ...distractorPool,
+            ])
+            setConfig({ targets: delayed, distractors: distractorPool, options: recognitionOptions })
+            setPhase('task')
+            taskStartedAt.current = performance.now()
+          })
           break
         }
       }  }, [beginTask, difficulty, startCountdown],
@@ -667,27 +682,9 @@ export function MemoryJourney() {
         />
       )}
 
-      {/* ── DELAYED PREVIEW ── */}
-      {phase === 'delayed-preview' && (
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <ViewTimer
-            seconds={viewTimeLeft}
-            title={t('remember_later')}
-            subtitle={t('see_again_later')}
-          />
-          <div className={`mx-auto mt-8 grid w-full max-w-2xl gap-4 ${gridCols(delayedObjects.length)}`}>
-            {delayedObjects.map((item) => (
-              <div key={item.id} className="flex min-h-28 flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-primary">
-                <ObjectVisual item={item} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ── MEMORISE PHASE ── */}
       {phase === 'memorise' && (
-        <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center pt-4 pb-8">
           <ViewTimer
             seconds={viewTimeLeft}
             title={
@@ -699,7 +696,7 @@ export function MemoryJourney() {
             }
             subtitle={t('take_time')}
           />
-          <div className={`mx-auto mt-8 grid w-full max-w-2xl gap-4 ${
+          <div className={`mx-auto mt-8 grid w-full max-w-2xl gap-3 ${
             ROUND_TYPES[round] === 'spatial' && spatial
               ? gridCols(spatial.grid.length)
               : 'grid-cols-2 sm:grid-cols-3'
@@ -708,7 +705,7 @@ export function MemoryJourney() {
               ? spatial.grid
               : config?.targets ?? []
             ).map((item) => (
-              <div key={item.id} className="flex min-h-32 flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-primary">
+              <div key={item.id} className="flex min-h-32 flex-col items-center justify-center rounded-2xl border border-border bg-card p-4 text-primary">
                 <ObjectVisual item={item} />
               </div>
             ))}
@@ -828,26 +825,26 @@ function ObjectRecallTask({
 }) {
   const { t } = useLanguage()
   return (
-    <section className="flex flex-1 flex-col">
-      <h1 className="mt-4 text-center text-3xl font-bold text-foreground">{title}</h1>
+    <section className="flex flex-col">
+      <h1 className="mt-4 text-center text-2xl font-bold text-foreground">{title}</h1>
       {showHint && (
-        <p className="mx-auto mt-4 rounded-xl bg-primary/10 px-5 py-3 text-lg font-medium text-primary">
+        <p className="mx-auto mt-4 rounded-2xl bg-primary/10 px-5 py-3 text-base font-medium text-primary">
           {t('memory_hint')}
         </p>
       )}
-      <div className="mx-auto mt-8 grid w-full max-w-2xl grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="mx-auto mt-6 grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
         {config.options.map((item) => {
           const chosen = selected.has(item.id)
           return (
             <button key={item.id} onClick={() => onToggle(item.id)} aria-pressed={chosen}
-              className="relative flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-border bg-card p-4 text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10">
+              className="relative flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-border bg-card p-4 text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10">
               <ObjectVisual item={item} />
               {chosen && <Check className="absolute right-3 top-3 size-6 text-primary" aria-label={t('selected')} />}
             </button>
           )
         })}
       </div>
-      <div className="mx-auto mt-auto flex w-full max-w-2xl flex-col gap-3 pt-7 sm:flex-row">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 pt-7 sm:flex-row">
         <Button variant="outline" size="lg" className="flex-1 text-lg" onClick={onHint} disabled={showHint}>
           <Lightbulb data-icon="inline-start" />{t('hint')} {hints > 0 ? `(${hints})` : ''}
         </Button>
@@ -869,22 +866,22 @@ function SpatialTask({
   if (!currentQ) return null
 
   return (
-    <section className="flex flex-1 flex-col items-center">
-      <h1 className="mt-5 text-center text-3xl font-bold text-foreground">
+    <section className="flex flex-col items-center">
+      <h1 className="mt-5 text-center text-2xl font-bold text-foreground">
         {t('where_was').replace('{object}', currentQ.label.toLowerCase())}
       </h1>
-      <p className="mt-2 text-lg text-muted-foreground">
+      <p className="mt-2 text-base text-muted-foreground">
         Question {spatial.currentQuestionIndex + 1} of {spatial.questions.length}
       </p>
       {attempts > 0 && (
-        <p role="status" className="mt-4 rounded-xl bg-secondary px-5 py-3 text-lg text-foreground">
+        <p role="status" className="mt-4 rounded-2xl bg-secondary px-5 py-3 text-base text-foreground">
           {t('try_another_place')}
         </p>
       )}
-      <div className={`mt-8 grid w-full max-w-2xl gap-4 ${gridCols(spatial.grid.length)}`}>
+      <div className={`mt-6 grid w-full max-w-2xl gap-3 ${gridCols(spatial.grid.length)}`}>
         {spatial.grid.map((item, index) => (
           <button key={index} onClick={() => onChoose(index)}
-            className="flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 border-border bg-card transition-colors duration-150 hover:border-primary/50 hover:bg-primary/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            className="flex aspect-square cursor-pointer items-center justify-center rounded-2xl border-2 border-border bg-card transition-colors duration-150 hover:border-primary/50 hover:bg-primary/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
             <ObjectVisual item={item} compact={spatial.grid.length > 6} />
           </button>
         ))}
@@ -901,25 +898,25 @@ function OrderTask({
 }) {
   const { t } = useLanguage()
   return (
-    <section className="flex flex-1 flex-col">
-      <h1 className="mt-4 text-center text-3xl font-bold text-foreground">{t('order_instruction')}</h1>
-      <p className="mt-2 text-center text-lg text-muted-foreground">{t('order_help')}</p>
-      <div className="mx-auto mt-7 flex w-full max-w-3xl flex-wrap justify-center gap-3">
+    <section className="flex flex-col">
+      <h1 className="mt-4 text-center text-2xl font-bold text-foreground">{t('order_instruction')}</h1>
+      <p className="mt-2 text-center text-base text-muted-foreground">{t('order_help')}</p>
+      <div className="mx-auto mt-6 flex w-full max-w-3xl flex-wrap justify-center gap-3">
         {config.options.map((item) => (
           <button key={item.id} onClick={() => onAdd(item)}
             disabled={ordered.some((v) => v.id === item.id)}
-            className="flex min-h-24 min-w-28 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-border bg-card p-3 text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100">
+            className="flex min-h-24 min-w-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-border bg-card p-3 text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100">
             <ObjectVisual item={item} compact />
           </button>
         ))}
       </div>
-      <ol className="mx-auto mt-8 grid w-full max-w-3xl gap-3 sm:grid-cols-2">
+      <ol className="mx-auto mt-6 grid w-full max-w-3xl gap-3 sm:grid-cols-2">
         {Array.from({ length: config.targets.length }, (_, index) => {
           const item = ordered[index]
           return (
-            <li key={index} className="min-h-20">
+            <li key={index} className="min-h-16">
               <button disabled={!item} onClick={() => item && onRemove(item.id)}
-                className="flex min-h-20 w-full cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-border bg-card px-5 text-left text-primary transition-colors duration-150 hover:border-primary/40 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100">
+                className="flex min-h-16 w-full cursor-pointer items-center gap-4 rounded-2xl border-2 border-dashed border-border bg-card px-5 text-left text-primary transition-colors duration-150 hover:border-primary/40 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100">
                 <span className="text-xl font-bold text-muted-foreground">{index + 1}</span>
                 {item ? <ObjectVisual item={item} compact /> : <span className="text-lg text-muted-foreground">{t('choose_object')}</span>}
               </button>
@@ -927,7 +924,7 @@ function OrderTask({
           )
         })}
       </ol>
-      <Button size="lg" className="mx-auto mt-auto w-full max-w-sm text-lg"
+      <Button size="lg" className="mx-auto w-full max-w-sm text-lg"
         disabled={ordered.length !== config.targets.length} onClick={onSubmit}>
         {t('check_order')}
       </Button>
@@ -943,34 +940,34 @@ function PersonalMemoryTask({
 }) {
   const { t } = useLanguage()
   if (!question) {
-    return (
-      <section className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="flex size-20 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Heart className="size-10" /></div>
-        <h1 className="mt-6 text-3xl font-bold text-foreground">Personal memories are being prepared.</h1>
+  return (
+    <section className="flex flex-col items-center justify-center text-center">
+      <div className="flex size-20 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Heart className="size-10" /></div>
+        <h1 className="mt-5 text-2xl font-bold text-foreground">Personal memories are being prepared.</h1>
         <p className="mt-3 text-lg text-muted-foreground">This round will be available soon.</p>
         <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={onSubmit}>{t('next_round')}</Button>
       </section>
     )
   }
   return (
-    <section className="flex flex-1 flex-col items-center">
-      <h1 className="mt-5 text-center text-3xl font-bold text-foreground">Who is this?</h1>
-      <p className="mt-2 text-lg text-muted-foreground">{question.card.description}</p>
-      <div className="mt-8 flex size-40 items-center justify-center overflow-hidden rounded-2xl border-2 border-border bg-card">
+    <section className="flex flex-col items-center">
+      <h1 className="mt-5 text-center text-2xl font-bold text-foreground">Who is this?</h1>
+      <p className="mt-2 text-base text-muted-foreground">{question.card.description}</p>
+      <div className="mt-6 flex size-40 items-center justify-center overflow-hidden rounded-2xl border-2 border-border bg-card">
         <img src={question.card.imageUrl} alt={question.card.name} className="size-full object-cover" />
       </div>
-      <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-1 gap-3">
+      <div className="mx-auto mt-6 grid w-full max-w-md grid-cols-1 gap-3">
         {question.options.map((option) => {
           const chosen = selectedAnswer === option
           return (
             <button key={option} onClick={() => onSelect(option)} aria-pressed={chosen}
-              className={`flex min-h-16 cursor-pointer items-center justify-center rounded-xl border-2 px-6 text-lg font-semibold transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${chosen ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent'}`}>
+              className={`flex min-h-14 cursor-pointer items-center justify-center rounded-2xl border-2 px-6 text-base font-semibold transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${chosen ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent'}`}>
               {option}{chosen && <Check className="ml-3 size-5 text-primary" />}
             </button>
           )
         })}
       </div>
-      <Button size="lg" className="mx-auto mt-auto w-full max-w-sm text-lg" disabled={selectedAnswer === null} onClick={onSubmit}>
+      <Button size="lg" className="mx-auto w-full max-w-sm text-lg" disabled={selectedAnswer === null} onClick={onSubmit}>
         {t('submit_answer')}
       </Button>
     </section>

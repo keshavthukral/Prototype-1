@@ -52,7 +52,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       <Separator />
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-3">
+      <nav className="flex-1 px-3 py-3" aria-label={t('caregiver_portal')}>
         <ul className="space-y-0.5">
           {navItems.map(({ key, path, icon: Icon }) => {
             const isActive = location.pathname === path
@@ -64,12 +64,20 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
                     setMobileOpen(false)
                   }}
                   className={cn(
-                    'flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                    'relative flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                     isActive
                       ? 'bg-primary/10 text-primary'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
+                  aria-current={isActive ? 'page' : undefined}
                 >
+                  {/* Active indicator bar */}
+                  {isActive && (
+                    <span
+                      className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary"
+                      aria-hidden="true"
+                    />
+                  )}
                   <Icon className="h-4 w-4 shrink-0" />
                   {t(key)}
                 </button>

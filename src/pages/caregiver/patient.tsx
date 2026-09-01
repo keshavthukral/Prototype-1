@@ -220,7 +220,7 @@ export function PatientDetailsPage() {
 
   return (
     <SidebarLayout>
-      <div className="px-6 py-6 lg:px-8 max-w-[1000px]">
+      <div className="px-6 py-6 lg:px-8 max-w-[1400px]">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">

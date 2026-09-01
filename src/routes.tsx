@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { PatientLayout } from '@/components/patient/patient-layout'
 import { RoleSelectionPage } from '@/pages/shared/role-selection'
 import { LanguageSelectPage } from '@/pages/patient/language-select'
 import { PatientHomePage } from '@/pages/patient/home'
@@ -25,20 +26,20 @@ export function AppRoutes() {
       {/* Root - Role Selection */}
       <Route path="/" element={<RoleSelectionPage />} />
 
-      {/* Patient Routes */}
+      {/* Patient Routes — wrapped in responsive layout shell */}
       <Route path="/patient/language" element={<LanguageSelectPage />} />
-      <Route path="/patient" element={<PatientHomePage />} />
-      <Route path="/patient/games" element={<GameSelection />} />
-      <Route path="/patient/game/memory" element={<MemoryJourney />} />
-      <Route path="/patient/game/pattern" element={<AttentionAdventure />} />
-
-      <Route path="/patient/activity" element={<Navigate to="/patient/game/memory?mode=daily" replace />} />
-
-      <Route path="/patient/reminders" element={<RemindersPage />} />
-      <Route path="/patient/memories" element={<MemoriesPage />} />
-      <Route path="/patient/progress" element={<ProgressPage />} />
-      <Route path="/patient/check-in" element={<CheckInPage />} />
-      <Route path="/patient/help" element={<HelpPage />} />
+      <Route element={<PatientLayout />}>
+        <Route path="/patient" element={<PatientHomePage />} />
+        <Route path="/patient/games" element={<GameSelection />} />
+        <Route path="/patient/game/memory" element={<MemoryJourney />} />
+        <Route path="/patient/game/pattern" element={<AttentionAdventure />} />
+        <Route path="/patient/activity" element={<Navigate to="/patient/game/memory?mode=daily" replace />} />
+        <Route path="/patient/reminders" element={<RemindersPage />} />
+        <Route path="/patient/memories" element={<MemoriesPage />} />
+        <Route path="/patient/progress" element={<ProgressPage />} />
+        <Route path="/patient/check-in" element={<CheckInPage />} />
+        <Route path="/patient/help" element={<HelpPage />} />
+      </Route>
 
       {/* Caregiver Routes */}
       <Route path="/caregiver/login" element={<CaregiverLoginPage />} />

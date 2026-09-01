@@ -8,7 +8,6 @@ import { AppRoutes } from '@/routes'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { DevNetworkToggle } from '@/components/dev-network-toggle'
 import { seedDemoData } from '@/lib/demo/seed'
-import { PageReader } from '@/components/patient/page-reader'
 
 function App() {
   // Seed demo data on first load (idempotent, no-op if already seeded or Supabase configured)
@@ -21,8 +20,11 @@ function App() {
         <LanguageProvider>
           <AuthProvider>
             <SyncProvider>
+              {/* Skip to main content — keyboard accessibility */}
+              <a href="#main-content" className="skip-link">
+                Skip to main content
+              </a>
               <AppRoutes />
-              <PageReader />
               <Toaster position="top-center" richColors />
               <DevNetworkToggle />
             </SyncProvider>

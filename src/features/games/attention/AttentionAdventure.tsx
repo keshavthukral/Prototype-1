@@ -371,13 +371,13 @@ export function AttentionAdventure() {
       )}
 
       {phase === 'daily-complete' && (
-        <section className="flex flex-1 flex-col items-center justify-center text-center">
+        <section className="flex flex-col items-center justify-center text-center px-4 pt-8 pb-12">
           <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Check className="size-10" />
+            <Check className="size-9" />
           </div>
-          <h1 className="mt-6 text-[2.5rem] font-bold text-foreground">{t('daily_complete')}</h1>
-          <p className="mt-3 text-xl text-muted-foreground">{t('daily_complete_message')}</p>
-          <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={() => navigate('/patient')}>
+          <h1 className="mt-5 text-3xl font-bold text-foreground">{t('daily_complete')}</h1>
+          <p className="mt-2 text-base text-muted-foreground">{t('daily_complete_message')}</p>
+          <Button size="lg" className="mt-8 min-h-16 w-full max-w-sm text-lg" onClick={() => navigate('/patient')}>
             {t('return_home')}
           </Button>
         </section>
@@ -409,34 +409,33 @@ function ChallengeView({
     isMatchPair && challenge.pairs && matchedPairs.size >= challenge.pairs.length * 2
 
   return (
-    <section className="flex flex-1 flex-col">
-      <h1 className="mt-3 text-center text-3xl font-bold text-foreground">{currentPrompt}</h1>
+    <section className="flex flex-col">        <h1 className="mt-3 text-center text-2xl font-bold text-foreground">{currentPrompt}</h1>
 
       {showHint && (
-        <p className="mx-auto mt-4 rounded-xl bg-primary/10 px-5 py-3 text-lg font-medium text-primary">
+        <p className="mx-auto mt-4 rounded-2xl bg-primary/10 px-5 py-3 text-base font-medium text-primary">
           {isOddOneOut ? 'Look carefully at each shape.' : isMatchPair ? 'Tap two cards that go together.' : 'Look for what repeats or changes.'}
         </p>
       )}
 
       {/* Visual sequence */}
       {!isOddOneOut && !isMatchPair && !isTargetFind && challenge.sequence.length > 0 && (
-        <div className="mx-auto mt-10 flex min-h-36 w-full max-w-3xl flex-wrap items-center justify-center gap-3 rounded-xl border border-border bg-card p-6" aria-label="Visual sequence">
+        <div className="mx-auto mt-8 flex min-h-32 w-full max-w-3xl flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-card p-5" aria-label="Visual sequence">
           {challenge.sequence.map((item, i) => (
-            <span key={`${item}-${i}`} className="flex size-16 items-center justify-center rounded-xl bg-secondary text-4xl font-bold text-foreground">{item}</span>
+            <span key={`${item}-${i}`} className="flex size-14 items-center justify-center rounded-xl bg-secondary text-3xl font-bold text-foreground">{item}</span>
           ))}
-          <span className="flex size-16 items-center justify-center rounded-xl border-2 border-dashed border-primary bg-primary/10 text-4xl font-bold text-primary">?</span>
+          <span className="flex size-14 items-center justify-center rounded-xl border-2 border-dashed border-primary bg-primary/10 text-3xl font-bold text-primary">?</span>
         </div>
       )}
 
       {/* Find Different grid */}
       {isOddOneOut && challenge.grid && (
-        <div className="mx-auto mt-10 grid w-full max-w-md gap-3"
+        <div className="mx-auto mt-8 grid w-full max-w-md gap-3"
           style={{ gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(challenge.grid.length))}, 1fr)` }}>
           {challenge.grid.map((item, i) => {
             const isChosen = selectedIndex === i
             return (
               <button key={i} onClick={() => onSelect(i)} aria-pressed={isChosen}
-                className={`relative flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isChosen ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
+                className={`relative flex aspect-square cursor-pointer items-center justify-center rounded-2xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isChosen ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
                 {item}
                 {isChosen && <Check className="absolute right-2 top-2 size-5 text-primary" />}
               </button>
@@ -447,12 +446,12 @@ function ChallengeView({
 
       {/* Target Find — toggleable items */}
       {isTargetFind && challenge.targetItems && (
-        <div className="mx-auto mt-10 flex flex-wrap items-center justify-center gap-4 rounded-xl border border-border bg-card p-6">
+        <div className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-card p-5">
           {challenge.targetItems.map((item, i) => {
             const isSelected = targetFindSelected.has(i)
             return (
               <button key={i} onClick={() => onTargetFindToggle(i)} aria-pressed={isSelected}
-                className={`flex size-16 cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isSelected ? 'border-primary bg-primary/10' : 'border-transparent bg-secondary hover:border-primary/30'}`}>
+                className={`flex size-14 cursor-pointer items-center justify-center rounded-2xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isSelected ? 'border-primary bg-primary/10' : 'border-transparent bg-secondary hover:border-primary/30'}`}>
                 {item}
                 {isSelected && <Check className="absolute -right-1 -top-1 size-4 text-primary" />}
               </button>
@@ -463,13 +462,13 @@ function ChallengeView({
 
       {/* Match Pair */}
       {isMatchPair && challenge.pairs && (
-        <div className="mx-auto mt-10 grid w-full max-w-md grid-cols-4 gap-3">
+        <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-4 gap-3">
           {challenge.options.map((item) => {
             const isMatched = matchedPairs.has(item)
             const isSelected = matchSelected.includes(item)
             return (
               <button key={item} onClick={() => onMatchSelect(item)} disabled={isMatched} aria-pressed={isSelected}
-                className={`relative flex h-20 cursor-pointer items-center justify-center rounded-xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 ${isMatched ? 'border-success bg-success/10' : isSelected ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
+                className={`relative flex h-20 cursor-pointer items-center justify-center rounded-2xl border-2 text-3xl transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 ${isMatched ? 'border-success bg-success/10' : isSelected ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40 hover:bg-accent'}`}>
                 {item}
                 {isMatched && <Check className="absolute right-1 top-1 size-4 text-success" />}
               </button>
@@ -480,13 +479,13 @@ function ChallengeView({
 
       {/* Multiple choice */}
       {!isOddOneOut && !isMatchPair && !isTargetFind && (
-        <div className="mx-auto mt-8 grid w-full max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="mx-auto mt-8 grid w-full max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
           {challenge.options.map((option, optionIndex) => {
             const isSelected = selectedIndex === optionIndex
             return (
               <button key={`${option}-${optionIndex}`} onClick={() => onSelect(optionIndex)}
                 aria-pressed={isSelected} aria-label={`Answer ${optionIndex + 1}: ${option}`}
-                className="relative flex min-h-24 cursor-pointer items-center justify-center rounded-xl border-2 border-border bg-card text-4xl font-bold text-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary">
+                className="relative flex min-h-[5.5rem] cursor-pointer items-center justify-center rounded-2xl border-2 border-border bg-card text-3xl font-bold text-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary">
                 {option}
                 {isSelected && <Check className="absolute right-2 top-2 size-5 text-primary" />}
               </button>
@@ -495,12 +494,12 @@ function ChallengeView({
         </div>
       )}
 
-      <div className="mx-auto mt-auto flex w-full max-w-3xl flex-col gap-3 pt-8 sm:flex-row">
-        <Button variant="outline" size="lg" className="text-lg" onClick={onHint} disabled={showHint}>
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 pt-6 sm:flex-row">
+        <Button variant="outline" size="lg" className="text-base" onClick={onHint} disabled={showHint}>
           <Lightbulb data-icon="inline-start" />{t('hint')} {hints > 0 ? `(${hints})` : ''}
         </Button>
-        <Button variant="ghost" size="lg" className="text-lg" onClick={onSkip}>{t('skip')}</Button>
-        <Button size="lg" className="flex-1 text-lg" onClick={onSubmit}
+        <Button variant="ghost" size="lg" className="text-base" onClick={onSkip}>{t('skip')}</Button>
+        <Button size="lg" className="flex-1 text-base" onClick={onSubmit}
           disabled={!isMatchPair && !isTargetFind && selectedIndex === null}>
           {isMatchPair
             ? allPairsMatched ? t('check_answer') : `${matchedPairs.size / 2} / ${challenge.pairs?.length ?? 0} matched`
@@ -520,17 +519,17 @@ function Feedback({ correct, skipped, last, onNext }: {
 }) {
   const { t } = useLanguage()
   return (
-    <section className="flex flex-1 flex-col items-center justify-center text-center">
+    <section className="flex flex-col items-center justify-center text-center px-4 pt-8 pb-12">
       <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <Check className="size-10" />
+        <Check className="size-9" />
       </div>
-      <h1 className="mt-6 text-3xl font-bold text-foreground">
+      <h1 className="mt-5 text-2xl font-bold text-foreground">
         {skipped ? t('thats_okay') : correct ? t('thats_right') : t('nice_try')}
       </h1>
       {!correct && !skipped && (
-        <p className="mt-3 text-xl text-muted-foreground">Keep trying — you are doing well.</p>
+        <p className="mt-2 text-base text-muted-foreground">Keep trying — you are doing well.</p>
       )}
-      <Button size="lg" className="mt-9 min-h-16 w-full max-w-sm text-xl" onClick={onNext}>
+      <Button size="lg" className="mt-8 min-h-16 w-full max-w-sm text-lg" onClick={onNext}>
         {last ? t('see_results') : t('next_question')}
       </Button>
     </section>

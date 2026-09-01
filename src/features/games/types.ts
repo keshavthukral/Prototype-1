@@ -25,5 +25,5 @@ export interface PatternQuestionConfig {
 }
 
 export function targetsCountForDifficulty(d: DifficultyLevel): number {
-  return d === 1 ? 3 : d === 2 ? 4 : d === 3 ? 5 : 7
+  return d === 1 ? 3 : d === 2 ? 4 : d === 3 ? 5 : 6
 }

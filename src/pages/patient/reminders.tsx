@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Apple, ArrowLeft, Check, Clock3, Droplets, Footprints, Gamepad2, Phone, Pill, Timer, WifiOff } from 'lucide-react'
+import { ArrowLeft, Check, Clock, Droplets, Apple, Footprints, Gamepad2, Phone, Pill, Timer, WifiOff, Bell } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { PatientBottomNav } from '@/components/patient/bottom-nav'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { useLanguage } from '@/lib/i18n/language-context'
 import { isSupabaseConfigured } from '@/lib/supabase/client'
 import { db, type LocalReminder } from '@/lib/db/database'
 import { reminderRepository } from '@/lib/repositories/reminder'
+import { cn } from '@/lib/utils'
 
 const icons = { medicine: Pill, hydration: Droplets, meal: Apple, walk: Footprints, family_call: Phone, daily_activity: Gamepad2 }
 const labelKeys = { medicine: 'medicine', hydration: 'hydration', meal: 'meal', walk: 'walk', family_call: 'family_call', daily_activity: 'daily_activity' } as const
@@ -40,10 +40,114 @@ export function RemindersPage() {
     catch { toast.error(t('reminder_update_failed')) }
   }
 
-  return <div className="patient-ui min-h-screen bg-background"><main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 pb-28 pt-7 sm:px-8"><Button asChild variant="ghost" className="w-fit px-3"><Link to="/patient"><ArrowLeft data-icon="inline-start" />{t('back')}</Link></Button><header><h1 className="text-[2.25rem] font-bold tracking-[-0.02em] text-foreground sm:text-[2.5rem]">{t('reminders_title')}</h1><p className="mt-2 text-xl text-muted-foreground">{t('reminders_prepared')}</p>{(!navigator.onLine || !isSupabaseConfigured()) && <p className="mt-3 flex items-center gap-2 text-base font-medium text-muted-foreground"><WifiOff className="size-5" />{t('works_offline')}</p>}</header><ReminderSection title={t('today')} empty={t('no_pending_reminders')} reminders={shown.filter((item) => !completedIds.has(item.id))} now={now} language={language} snoozeId={snoozeId} onComplete={complete} onSnoozeOpen={setSnoozeId} onSnooze={snooze} /><ReminderSection title={t('completed')} empty={t('no_completed_reminders')} reminders={shown.filter((item) => completedIds.has(item.id))} now={now} language={language} completed snoozeId={snoozeId} onComplete={complete} onSnoozeOpen={setSnoozeId} onSnooze={snooze} /></main><PatientBottomNav /></div>
+  return (
+    <main id="main-content" className="patient-content mx-auto flex w-full flex-col gap-7 px-5 pt-6 pb-8 sm:px-8 lg:px-12 lg:pt-8 page-enter">
+      <Button asChild variant="ghost" size="sm" className="w-fit px-2">
+        <Link to="/patient"><ArrowLeft data-icon="inline-start" />{t('back')}</Link>
+      </Button>
+
+      <header>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground lg:text-4xl">{t('reminders_title')}</h1>
+        <p className="mt-1.5 text-base text-muted-foreground">{t('reminders_prepared')}</p>
+        {(!navigator.onLine || !isSupabaseConfigured()) && (
+          <p className="mt-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <WifiOff className="size-4" />{t('works_offline')}
+          </p>
+        )}
+      </header>
+
+      <ReminderSection
+        title={t('today')}
+        empty={t('no_pending_reminders')}
+        reminders={shown.filter((item) => !completedIds.has(item.id))}
+        now={now} language={language} snoozeId={snoozeId}
+        onComplete={complete} onSnoozeOpen={setSnoozeId} onSnooze={snooze}
+      />
+      <ReminderSection
+        title={t('completed')}
+        empty={t('no_completed_reminders')}
+        reminders={shown.filter((item) => completedIds.has(item.id))}
+        now={now} language={language} completed snoozeId={snoozeId}
+        onComplete={complete} onSnoozeOpen={setSnoozeId} onSnooze={snooze}
+      />
+    </main>
+  )
 }
 
 function ReminderSection({ title, empty, reminders, now, language, completed, snoozeId, onComplete, onSnoozeOpen, onSnooze }: { title: string; empty: string; reminders: LocalReminder[]; now: number; language: 'en' | 'as'; completed?: boolean; snoozeId: string | null; onComplete: (item: LocalReminder) => void; onSnoozeOpen: (id: string | null) => void; onSnooze: (item: LocalReminder, minutes: number) => void }) {
   const { t } = useLanguage()
-  return <section className="flex flex-col gap-4"><h2 className="text-2xl font-bold text-foreground">{title}</h2>{reminders.length === 0 ? <p className="rounded-xl bg-secondary p-5 text-lg text-muted-foreground">{empty}</p> : reminders.map((item) => { const Icon = icons[item.reminderType]; const snoozed = Boolean(item.snoozedUntil && new Date(item.snoozedUntil).getTime() > now); const titleText = language === 'as' ? item.titleAs ?? item.title : item.title; return <article key={item.id} className={`rounded-xl border border-border bg-card p-5 ${completed ? 'opacity-75' : ''}`}><div className="flex items-center gap-4"><div className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{completed ? <Check className="reminder-check size-8" /> : <Icon className="size-8" />}</div><div className="min-w-0 flex-1"><p className="flex items-center gap-2 text-lg font-semibold text-primary"><Clock3 className="size-5" />{formatTime(item.scheduledTime, language)}</p><h3 className="mt-1 text-2xl font-bold text-foreground">{titleText}</h3><p className="mt-1 text-base text-muted-foreground">{t(labelKeys[item.reminderType])}</p></div></div>{snoozed ? <p role="status" className="mt-5 flex min-h-14 items-center gap-3 rounded-xl bg-secondary px-5 text-lg font-semibold text-foreground"><Timer className="size-6 text-primary" />{t('remind_again_at').replace('{time}', formatTime(new Date(item.snoozedUntil!).toTimeString().slice(0, 5), language))}</p> : !completed && <><div className="mt-5 flex flex-col gap-3 sm:flex-row"><Button size="lg" className="flex-1 text-lg" onClick={() => onComplete(item)}><Check data-icon="inline-start" />{item.reminderType === 'medicine' ? t('taken') : t('done')}</Button><Button size="lg" variant="outline" className="flex-1 text-lg" onClick={() => onSnoozeOpen(snoozeId === item.id ? null : item.id)}><Timer data-icon="inline-start" />{t('remind_me_later')}</Button></div>{snoozeId === item.id && <div className="mt-3 rounded-xl border border-border bg-secondary p-4"><p className="mb-3 text-lg font-semibold text-foreground">{t('remind_in')}</p><div className="grid grid-cols-3 gap-2">{([10, 30, 60] as const).map((minutes) => <Button key={minutes} variant="outline" onClick={() => onSnooze(item, minutes)}>{minutes === 60 ? t('one_hour') : t('minutes').replace('{count}', String(minutes))}</Button>)}</div></div>}</>}</article> })}</section>
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-lg font-bold text-foreground">{title}</h2>
+      {reminders.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-card p-6 text-center">
+          <Bell className="mx-auto mb-2 size-8 text-muted-foreground/40" aria-hidden="true" />
+          <p className="text-base text-muted-foreground">{empty}</p>
+        </div>
+      ) : (
+        reminders.map((item) => {
+          const Icon = icons[item.reminderType]
+          const snoozed = Boolean(item.snoozedUntil && new Date(item.snoozedUntil).getTime() > now)
+          const titleText = language === 'as' ? item.titleAs ?? item.title : item.title
+          return (
+            <article
+              key={item.id}
+              className={cn(
+                'rounded-2xl border border-border bg-card p-5',
+                completed && 'opacity-60'
+              )}
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  {completed ? <Check className="reminder-check size-6" /> : <Icon className="size-6" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Clock className="size-4 text-primary" />
+                    <span className="text-sm font-semibold text-primary">{formatTime(item.scheduledTime, language)}</span>
+                  </div>
+                  <h3 className="mt-1 text-lg font-bold text-foreground">{titleText}</h3>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{t(labelKeys[item.reminderType])}</p>
+                </div>
+              </div>
+
+              {snoozed ? (
+                <div className="mt-4 flex items-center gap-2 rounded-xl bg-secondary px-4 py-3">
+                  <Timer className="size-5 text-primary shrink-0" />
+                  <span className="text-sm font-semibold text-foreground">
+                    {t('remind_again_at').replace('{time}', formatTime(new Date(item.snoozedUntil!).toTimeString().slice(0, 5), language))}
+                  </span>
+                </div>
+              ) : !completed ? (
+                <div className="mt-4">
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button size="lg" className="flex-1 text-base" onClick={() => onComplete(item)} aria-label={`${item.reminderType === 'medicine' ? t('taken') : t('done')}: ${titleText}`}>
+                      <Check data-icon="inline-start" aria-hidden="true" />
+                      {item.reminderType === 'medicine' ? t('taken') : t('done')}
+                    </Button>
+                    <Button size="lg" variant="outline" className="flex-1 text-base" onClick={() => onSnoozeOpen(snoozeId === item.id ? null : item.id)} aria-label={`${t('remind_me_later')}: ${titleText}`}>
+                      <Timer data-icon="inline-start" aria-hidden="true" />
+                      {t('remind_me_later')}
+                    </Button>
+                  </div>
+                  {snoozeId === item.id && (
+                    <div className="mt-3 rounded-xl border border-border bg-secondary p-4">
+                      <p className="mb-3 text-sm font-semibold text-foreground">{t('remind_in')}</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {([10, 30, 60] as const).map((minutes) => (
+                          <Button key={minutes} variant="outline" size="sm" onClick={() => onSnooze(item, minutes)}>
+                            {minutes === 60 ? t('one_hour') : t('minutes').replace('{count}', String(minutes))}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </article>
+          )
+        })
+      )}
+    </section>
+  )
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Apple, Armchair, ArrowLeft, Banana, BookOpen, BriefcaseBusiness, Check, Clock3, Coffee, Flower2, Glasses, GripVertical, KeyRound, Lightbulb, Phone, Umbrella } from 'lucide-react'
+import { Apple, Armchair, ArrowLeft, Banana, BookOpen, BriefcaseBusiness, Check, CircleDot, Clock3, Coffee, Disc, FlaskRound, Flower2, Footprints, Glasses, GraduationCap, GripVertical, KeyRound, Lamp, Lightbulb, Phone, Umbrella, UtensilsCrossed, Volleyball } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Celebration } from '@/features/games/Celebration'
@@ -17,7 +17,7 @@ type Metric = Record<string, unknown> & { round: number; type: RoundType; respon
 
 const TOTAL_ROUNDS = 4
 const ROUND_TYPES: RoundType[] = ['object', 'order', 'location', 'delayed']
-const iconMap = { apple: Apple, key: KeyRound, cup: Coffee, book: BookOpen, umbrella: Umbrella, flower: Flower2, clock: Clock3, glasses: Glasses, chair: Armchair, banana: Banana, telephone: Phone, bag: BriefcaseBusiness }
+const iconMap: Record<string, typeof Apple> = { apple: Apple, key: KeyRound, cup: Coffee, book: BookOpen, umbrella: Umbrella, flower: Flower2, clock: Clock3, glasses: Glasses, chair: Armchair, banana: Banana, telephone: Phone, bag: BriefcaseBusiness, spoon: UtensilsCrossed, ball: Volleyball, plate: Disc, hat: GraduationCap, ring: CircleDot, bottle: FlaskRound, lamp: Lamp, shoe: Footprints }
 
 function viewSeconds(difficulty: DifficultyLevel) { return difficulty === 1 ? 8 : difficulty === 2 ? 7 : 5 }
 function shuffle<T>(values: T[]) { return [...values].sort(() => Math.random() - 0.5) }

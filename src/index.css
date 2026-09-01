@@ -1,35 +1,47 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #f8fafc;
-  --color-foreground: #0f172a;
+  /* ── Color System ──────────────────────────────────────── */
+  --color-background: #f5f6f8;
+  --color-foreground: #1a2332;
   --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
+  --color-card-foreground: #1a2332;
   --color-popover: #ffffff;
-  --color-popover-foreground: #0f172a;
-  --color-primary: #0d9488;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #f1f5f9;
-  --color-secondary-foreground: #0f172a;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-accent: #f1f5f9;
-  --color-accent-foreground: #0f172a;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #ffffff;
-  --color-border: #e2e8f0;
-  --color-input: #e2e8f0;
-  --color-ring: #0d9488;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  --color-popover-foreground: #1a2332;
 
+  /* Primary — sophisticated teal, used sparingly as accent */
+  --color-primary: #1a7a6d;
+  --color-primary-hover: #15655a;
+  --color-primary-foreground: #ffffff;
+
+  /* Secondary surfaces */
+  --color-secondary: #eef1f4;
+  --color-secondary-foreground: #1a2332;
+  --color-muted: #eef1f4;
+  --color-muted-foreground: #4a5568;
+  --color-accent: #e8edf2;
+  --color-accent-foreground: #1a2332;
+
+  /* Status colors — muted, trustworthy */
+  --color-success: #2d8a56;
+  --color-warning: #c77c14;
+  --color-error: #c23b3b;
+  --color-destructive: #c23b3b;
+  --color-destructive-foreground: #ffffff;
+
+  /* Borders & inputs */
+  --color-border: #d4d9e0;
+  --color-input: #d4d9e0;
+  --color-ring: #1a7a6d;
+
+  /* ── Typography Scale ──────────────────────────────────── */
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", "Lohit Assamese", sans-serif;
+
+  /* ── Border Radius ─────────────────────────────────────── */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
-
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 @layer base {
@@ -38,6 +50,8 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   button:not(:disabled),
   a[href] {
@@ -46,21 +60,51 @@
   button:disabled {
     @apply cursor-not-allowed;
   }
+  /* Improve muted-foreground contrast for WCAG AA */
+  .text-muted-foreground {
+    color: #4a5568;
+  }
+  /* Ensure secondary text is readable on light backgrounds */
+  p.text-muted-foreground,
+  span.text-muted-foreground,
+  td.text-muted-foreground {
+    color: #4a5568;
+  }
 }
 
-/* Patient-specific styles */
+/* ── Skip to content link ─────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  z-index: 999;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
+/* ── Patient-specific design tokens ─────────────────────── */
 .patient-ui {
   --spacing-unit: 8px;
-  --touch-target-min: 48px;
-  --text-base: 1.125rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.75rem;
-  --text-2xl: 2.25rem;
+  --touch-target-min: 52px;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.875rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 2.75rem;
   --radius-button: 12px;
   --radius-card: 16px;
 }
 
-/* Caregiver-specific styles */
+/* ── Caregiver-specific styles ──────────────────────────── */
 .caregiver-ui {
   --spacing-unit: 8px;
   --text-base: 0.875rem;
@@ -71,26 +115,37 @@
   --radius-card: 12px;
 }
 
-/* Accessibility - reduced motion: preserve useful feedback, disable decorative motion */
+/* ── Accessibility: reduced motion ──────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    /* Keep structural transitions (opacity, color, background-color) but disable transforms */
     transition-property: opacity, color, background-color, border-color, text-decoration-color, fill, stroke !important;
     transition-duration: 150ms !important;
     transition-timing-function: ease-out !important;
   }
 }
 
-/* Focus visible styles for accessibility */
+/* ── Focus visible for keyboard accessibility ───────────── */
+/* Strong, consistent focus ring across all interactive elements */
 :focus-visible {
-  @apply outline-2 outline-offset-2 outline-ring;
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Remove default outline on buttons since we provide custom focus-visible */
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+/* Links get focus-visible treatment */
+a:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
 }
 
-/* High contrast support */
+/* ── High contrast support ──────────────────────────────── */
 @media (prefers-contrast: high) {
   :root {
     --color-foreground: #000000;
@@ -100,6 +155,27 @@
   }
 }
 
-@keyframes reminder-check-in { 0% { transform: scale(.75); opacity: .2; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+/* ── Reminder check animation ───────────────────────────── */
+@keyframes reminder-check-in {
+  0% { transform: scale(.75); opacity: .2; }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
 .reminder-check { animation: reminder-check-in 240ms ease-out; }
 @media (prefers-reduced-motion: reduce) { .reminder-check { animation: none; } }
+
+/* ── Page fade-in ───────────────────────────────────────── */
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-enter { animation: page-fade-in 200ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .page-enter { animation: none; } }
+
+/* ── Responsive: sidebar + centered content layout ──────── */
+/* Caregiver sidebar width */
+@media (min-width: 1024px) {
+  .caregiver-content {
+    margin-left: 240px;
+  }
+}

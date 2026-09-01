@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Brain, CheckCircle2, Shapes } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { PatientBottomNav } from '@/components/patient/bottom-nav'
+
 import { useAuth } from '@/lib/supabase/auth-context'
 import { dbOperations } from '@/lib/db/database'
 import { useLanguage } from '@/lib/i18n/language-context'
+import { cn } from '@/lib/utils'
 
 export function ProgressPage() {
   const { user } = useAuth()
@@ -21,22 +22,60 @@ export function ProgressPage() {
   }, [user])
 
   return (
-    <div className="patient-ui min-h-screen bg-background">
-      <main className="mx-auto flex w-full max-w-2xl flex-col gap-7 px-5 pb-28 pt-7 sm:px-8">
-        <Button asChild variant="ghost" className="w-fit px-3"><Link to="/patient"><ArrowLeft data-icon="inline-start" />{t('back')}</Link></Button>
-        <header><h1 className="text-[2.25rem] font-bold tracking-[-0.02em] text-foreground sm:text-[2.5rem]">{t('progress_title')}</h1><p className="mt-2 text-xl text-muted-foreground">{t('progress_intro')}</p></header>
-        <div className="flex flex-col gap-4">
+    <main id="main-content" className="patient-content mx-auto flex w-full flex-col gap-6 px-5 pt-6 pb-8 sm:px-8 lg:px-12 lg:pt-8 page-enter">
+        <Button asChild variant="ghost" size="sm" className="w-fit px-2">
+          <Link to="/patient"><ArrowLeft data-icon="inline-start" />{t('back')}</Link>
+        </Button>
+
+        <header>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('progress_title')}</h1>
+          <p className="mt-1.5 text-base text-muted-foreground">{t('progress_intro')}</p>
+        </header>
+
+        <div className="flex flex-col gap-3">
           <ProgressRow icon={Brain} label={t('memory_activity')} done={completed.has('memory')} />
           <ProgressRow icon={Shapes} label={t('pattern_activity')} done={completed.has('pattern')} />
         </div>
-        <p className="rounded-xl bg-primary/10 p-6 text-xl font-semibold leading-relaxed text-primary">{completed.size === 2 ? t('progress_complete') : t('progress_encouragement')}</p>
-      </main>
-      <PatientBottomNav />
-    </div>
+
+        <div className={cn(
+          'rounded-2xl border p-5',
+          completed.size === 2
+            ? 'border-success/20 bg-success/5'
+            : 'border-primary/20 bg-primary/[0.04]'
+        )}>
+          <p className="text-base font-semibold leading-relaxed text-foreground">
+            {completed.size === 2 ? t('progress_complete') : t('progress_encouragement')}
+          </p>
+        </div>
+    </main>
   )
 }
 
 function ProgressRow({ icon: Icon, label, done }: { icon: typeof Brain; label: string; done: boolean }) {
   const { t } = useLanguage()
-  return <div className="flex min-h-20 items-center gap-4 rounded-xl border border-border bg-card p-5"><Icon className="size-8 text-primary" /><span className="flex-1 text-xl font-bold text-foreground">{label}</span><span className="flex items-center gap-2 text-lg font-semibold text-primary">{done && <CheckCircle2 className="size-6" />}{done ? t('completed_mark') : t('not_yet')}</span></div>
+  return (
+    <div className={cn(
+      'flex min-h-16 items-center gap-4 rounded-2xl border bg-card p-4',
+      done ? 'border-success/30' : 'border-border'
+    )}>
+      <div className={cn(
+        'flex size-11 shrink-0 items-center justify-center rounded-xl',
+        done ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'
+      )}>
+        <Icon className="size-5" />
+      </div>
+      <span className="flex-1 text-base font-bold text-foreground" id={`progress-${label.replace(/\s/g, '-').toLowerCase()}`}>{label}</span>
+      <span
+        className={cn(
+          'flex items-center gap-1.5 text-sm font-semibold',
+          done ? 'text-success' : 'text-muted-foreground'
+        )}
+        role="status"
+        aria-label={`${label}: ${done ? t('completed_mark') : t('not_yet')}`}
+      >
+        {done && <CheckCircle2 className="size-4" aria-hidden="true" />}
+        {done ? t('completed_mark') : t('not_yet')}
+      </span>
+    </div>
+  )
 }

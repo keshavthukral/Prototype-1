@@ -45,9 +45,9 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-/** Target counts per difficulty level */
+/** Target counts per difficulty level — gradual progression */
 function targetsCount(d: DifficultyLevel): number {
-  return d === 1 ? 3 : d === 2 ? 4 : d === 3 ? 5 : 7
+  return d === 1 ? 3 : d === 2 ? 4 : d === 3 ? 5 : 6
 }
 
 /** Distractor counts per difficulty level */
@@ -87,9 +87,9 @@ export function sequenceLength(d: DifficultyLevel): number {
   return d === 1 ? 3 : d === 2 ? 4 : d === 3 ? 5 : 6
 }
 
-/** Get view duration in seconds at given difficulty */
+/** Get view duration in seconds at given difficulty — generous timing */
 export function viewSeconds(d: DifficultyLevel): number {
-  return d === 1 ? 8 : d === 2 ? 7 : d === 3 ? 6 : 5
+  return d === 1 ? 10 : d === 2 ? 9 : d === 3 ? 8 : 8
 }
 
 /** Get number of spatial questions at given difficulty */

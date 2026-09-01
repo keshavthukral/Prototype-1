@@ -72,27 +72,27 @@ const activityIcon: Record<string, typeof Gamepad2> = {
 
 function DashboardSkeleton() {
   return (
-    <div className="px-6 py-6 lg:px-8 max-w-[1200px]">
+    <div className="px-6 py-6 lg:px-8 max-w-[1400px]">
       <Skeleton className="h-5 w-32 mb-6" />
 
       {/* Top metrics skeleton */}
-      <div className="mb-6 flex items-center gap-8 border-b border-border pb-5">
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i}>
+          <div key={i} className="rounded-xl border border-border bg-card p-4">
             <Skeleton className="h-3 w-20 mb-2" />
             <Skeleton className="h-6 w-14" />
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
         <div className="space-y-6">
           <Card className="rounded-xl">
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-36" />
             </CardHeader>
             <CardContent>
-              <Skeleton className="h-[220px] w-full rounded" />
+              <Skeleton className="h-[240px] w-full rounded" />
             </CardContent>
           </Card>
           <Card className="rounded-xl">
@@ -177,7 +177,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
   const { t } = useLanguage()
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <AlertCircle className="h-8 w-8 text-destructive mb-3" />
+      <AlertCircle className="h-8 w-8 text-destructive mb-3" aria-hidden="true" />
       <p className="text-sm font-medium text-foreground">{t('error_loading')}</p>
       <p className="mt-1 text-xs text-muted-foreground max-w-[280px]">{message}</p>
       <Button variant="outline" size="sm" className="mt-4 h-8 rounded-lg text-xs" onClick={onRetry}>
@@ -265,7 +265,7 @@ export function CaregiverDashboardPage() {
 
   return (
     <SidebarLayout>
-      <div className="px-6 py-6 lg:px-8 max-w-[1200px]">
+      <div className="px-6 py-6 lg:px-8 max-w-[1400px]">
         {/* Page header */}
         <div className="mb-6">
           <h1 className="text-xl font-semibold text-foreground tracking-tight">
@@ -278,44 +278,41 @@ export function CaregiverDashboardPage() {
           )}
         </div>
 
-        {/* Top metrics — inline */}
-        <div className="mb-6 flex flex-wrap items-center gap-6 sm:gap-8 border-b border-border pb-5">
-          <div>
+        {/* Top metrics — card-based grid */}
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               {t('today_summary')}
             </p>
-            <p className="mt-1 text-2xl font-semibold text-foreground tabular-nums">
+            <p className="mt-1.5 text-2xl font-semibold text-foreground tabular-nums">
               {totalTodaySessions > 0
                 ? `${totalTodaySessions} ${t('sessions_today')}`
                 : t('no_sessions_today')}
             </p>
           </div>
-          <div className="h-8 w-px bg-border hidden sm:block" />
-          <div>
+          <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               {t('reminder_completion')}
             </p>
-            <p className="mt-1 text-2xl font-semibold text-foreground tabular-nums">
+            <p className="mt-1.5 text-2xl font-semibold text-foreground tabular-nums">
               {totalReminders > 0 ? `${completedReminders}/${totalReminders}` : '\u2014'}
             </p>
           </div>
-          <div className="h-8 w-px bg-border hidden sm:block" />
-          <div>
+          <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               {t('memory_performance')}
             </p>
-            <p className="mt-1 text-2xl font-semibold text-foreground tabular-nums">
+            <p className="mt-1.5 text-2xl font-semibold text-foreground tabular-nums">
               {todayMemorySessions.length > 0
                 ? `${Math.round(todayMemorySessions.reduce((a, s) => a + s.accuracy, 0) / todayMemorySessions.length)}%`
                 : '\u2014'}
             </p>
           </div>
-          <div className="h-8 w-px bg-border hidden sm:block" />
-          <div>
+          <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               {t('attention_performance')}
             </p>
-            <p className="mt-1 text-2xl font-semibold text-foreground tabular-nums">
+            <p className="mt-1.5 text-2xl font-semibold text-foreground tabular-nums">
               {todayPatternSessions.length > 0
                 ? `${Math.round(todayPatternSessions.reduce((a, s) => a + s.accuracy, 0) / todayPatternSessions.length)}%`
                 : '\u2014'}
@@ -324,7 +321,7 @@ export function CaregiverDashboardPage() {
         </div>
 
         {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
           {/* Left: Chart + Recent Activity */}
           <div className="space-y-6">
             {/* Performance history chart */}
@@ -344,7 +341,11 @@ export function CaregiverDashboardPage() {
               <CardContent>
                 {hasChartData ? (
                   <>
-                    <div className="h-[220px]">
+                    <div
+                      className="h-[240px]"
+                      role="img"
+                      aria-label={`${t('performance_history')}: ${chartData.map((d) => `${d.date} memory ${d.memory ?? 'N/A'}% pattern ${d.pattern ?? 'N/A'}%`).join('; ')}`}
+                    >
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={chartData}
@@ -441,7 +442,7 @@ export function CaregiverDashboardPage() {
                           {i > 0 && <Separator />}
                           <div className="flex items-start gap-3 py-3">
                             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted mt-0.5">
-                              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                              <Icon className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-foreground leading-tight">
@@ -518,6 +519,7 @@ export function CaregiverDashboardPage() {
                                   ? 'bg-emerald-50 text-emerald-600'
                                   : `${config.bg} ${config.color}`
                               }`}
+                              aria-hidden="true"
                             >
                               <Icon className="h-3.5 w-3.5" />
                             </div>
@@ -533,7 +535,7 @@ export function CaregiverDashboardPage() {
                               </p>
                               {r.reminder.scheduledTime && (
                                 <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
+                                  <Clock className="h-3 w-3" aria-hidden="true" />
                                   {r.reminder.scheduledTime}
                                 </p>
                               )}
@@ -542,6 +544,7 @@ export function CaregiverDashboardPage() {
                               <Badge
                                 variant="outline"
                                 className="text-[10px] border-emerald-200 text-emerald-600 bg-emerald-50 shrink-0"
+                                aria-label={`${r.reminder.title}: completed`}
                               >
                                 {t('done')}
                               </Badge>
@@ -577,30 +580,30 @@ export function CaregiverDashboardPage() {
                     className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <span className="flex items-center gap-2.5">
-                      <Bell className="h-4 w-4 text-muted-foreground" />
+                      <Bell className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       {t('add_reminder')}
                     </span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                   </button>
                   <button
                     onClick={() => navigate('/caregiver/memories/new')}
                     className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <span className="flex items-center gap-2.5">
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                      <BookOpen className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       {t('add_memory')}
                     </span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                   </button>
                   <button
                     onClick={() => navigate('/caregiver/patient')}
                     className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <span className="flex items-center gap-2.5">
-                      <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+                      <Gamepad2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       {t('patient_details')}
                     </span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                   </button>
                 </div>
               </CardContent>
