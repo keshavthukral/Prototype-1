@@ -24,6 +24,20 @@ import {
   Umbrella,
   UtensilsCrossed,
   Volleyball,
+  Scissors,
+  Camera,
+  Crown,
+  Paintbrush,
+  Fish,
+  Shield,
+  Compass,
+  Anchor,
+  Hammer,
+  Bell,
+  Star,
+  Feather,
+  Drum,
+  Wallet,
 } from 'lucide-react'
 import type { GameChoice } from '@/features/games/types'
 
@@ -48,6 +62,20 @@ const iconMap: Record<string, typeof Apple> = {
   bottle: FlaskRound,
   lamp: Lamp,
   shoe: Footprints,
+  scissors: Scissors,
+  camera: Camera,
+  crown: Crown,
+  paintbrush: Paintbrush,
+  fish: Fish,
+  shield: Shield,
+  compass: Compass,
+  anchor: Anchor,
+  hammer: Hammer,
+  bell: Bell,
+  star: Star,
+  feather: Feather,
+  drum: Drum,
+  wallet: Wallet,
 }
 
 interface ObjectVisualProps {

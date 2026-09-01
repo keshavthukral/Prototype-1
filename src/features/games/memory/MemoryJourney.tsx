@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Brain, Check, Heart } from 'lucide-react'
+import { ArrowLeft, Brain, Check, Heart, Search, Grid3X3, ArrowUpDown, Image, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { GameShell } from '@/features/games/engine/GameShell'
@@ -72,6 +72,24 @@ const ROUND_TYPES: RoundType[] = [
   'personal',
   'delayed',
 ]
+
+/** Human-readable label for each round type */
+const ROUND_LABELS: Record<RoundType, string> = {
+  'visual-recall': 'Visual Object Recall',
+  'spatial': 'Spatial Memory',
+  'order': 'Sequence Memory',
+  'personal': 'Personal Memory',
+  'delayed': 'Delayed Recall',
+}
+
+/** Icon for the intro preview per round */
+const ROUND_PREVIEW_ICONS: Record<RoundType, typeof Brain> = {
+  'visual-recall': Search,
+  'spatial': Grid3X3,
+  'order': ArrowUpDown,
+  'personal': Image,
+  'delayed': Clock,
+}
 
 type Phase =
   | 'intro'
@@ -440,8 +458,10 @@ export function MemoryJourney() {
     const currentQuestion = spatial.questions[spatial.currentQuestionIndex]
     if (!currentQuestion) return
 
-    const gridItem = spatial.grid[index]
-    const isCorrect = gridItem?.id === currentQuestion.id
+    const originalPosition = spatial.grid.findIndex(
+      (item) => item.id === currentQuestion.id,
+    )
+    const isCorrect = index === originalPosition
     const responseTimeMs = performance.now() - taskStartedAt.current
 
     const newIncorrectAttempts = isCorrect ? 0 : spatial.incorrectAttempts + 1
@@ -465,16 +485,17 @@ export function MemoryJourney() {
       responseTimeMs,
     }]
 
+    const newCorrectCount = spatial.correctCount + 1
+
     if (spatial.currentQuestionIndex + 1 >= spatial.questions.length) {
       // All spatial questions done
-      const totalCorrect = spatial.correctCount + 1
       const totalQ = spatial.questions.length
-      const accuracy = (totalCorrect / totalQ) * 100
+      const accuracy = (newCorrectCount / totalQ) * 100
 
       const metric: SpatialMemoryMetric = {
         round: round + 1,
         roundType: 'spatial-memory',
-        correctLocations: totalCorrect,
+        correctLocations: newCorrectCount,
         totalLocations: totalQ,
         spatialErrors: spatial.incorrectAttempts,
         firstChoiceCorrect,
@@ -488,13 +509,13 @@ export function MemoryJourney() {
         hesitationDurationMs: 0,
       }
 
-      finishRound(metric, `${totalCorrect} of ${totalQ} locations found`, '', totalCorrect, totalQ)
+      finishRound(metric, `${newCorrectCount} of ${totalQ} locations found`, '', newCorrectCount, totalQ)
     } else {
       // Move to next question
       setSpatial({
         ...spatial,
         currentQuestionIndex: spatial.currentQuestionIndex + 1,
-        correctCount: totalCorrect,
+        correctCount: newCorrectCount,
         incorrectAttempts: 0,
         firstChoiceCorrect,
         questionResults: newResults,
@@ -693,6 +714,11 @@ export function MemoryJourney() {
           backLabel={mode === 'daily' ? t('home') : t('activities')}
           onBack={goBack}
           onStart={startSession}
+          duration="~5 minutes"
+          preview={ROUND_TYPES.map((type) => ({
+            label: ROUND_LABELS[type],
+            icon: ROUND_PREVIEW_ICONS[type],
+          }))}
         />
       )}
 
@@ -745,8 +771,11 @@ export function MemoryJourney() {
             {(ROUND_TYPES[round] === 'spatial' && spatial
               ? spatial.grid
               : config?.targets ?? []
-            ).map((item) => (
+            ).map((item, index) => (
               <div key={item.id} className="flex min-h-32 flex-col items-center justify-center rounded-2xl border border-border bg-card p-4 text-primary">
+                {ROUND_TYPES[round] === 'order' && (
+                  <span className="mb-1 text-xs font-bold text-muted-foreground">{index + 1}</span>
+                )}
                 <ObjectVisual item={item} />
               </div>
             ))}
@@ -819,6 +848,7 @@ export function MemoryJourney() {
           total={lastTotal}
           isLast={round + 1 >= TOTAL_ROUNDS}
           onNext={nextRound}
+          roundLabel={`${(ROUND_TYPES[round] ? ROUND_LABELS[ROUND_TYPES[round]] : undefined) ?? 'Round'} — Round ${round + 1} of ${TOTAL_ROUNDS}`}
         />
       )}
 
@@ -845,6 +875,11 @@ export function MemoryJourney() {
             setShowHeader(false)
           }}
           continueLabel={t('continue_pattern')}
+          roundBreakdown={metrics.map((m, i) => ({
+            label: (ROUND_TYPES[i] ? ROUND_LABELS[ROUND_TYPES[i]] : undefined) ?? `Round ${i + 1}`,
+            correct: 'correctTargets' in m ? m.correctTargets : 'correctLocations' in m ? m.correctLocations : 'correctPositions' in m ? m.correctPositions : 'correct' in m ? (m.correct ? 1 : 0) : 0,
+            total: 'totalTargets' in m ? m.totalTargets : 'totalLocations' in m ? m.totalLocations : 'totalPositions' in m ? m.totalPositions : 1,
+          }))}
         />
       )}
     </GameShell>
@@ -905,10 +940,11 @@ function SpatialTask({
         </p>
       )}
       <div className={`mt-6 grid w-full max-w-2xl gap-3 ${gridCols(spatial.grid.length)}`}>
-        {spatial.grid.map((item, index) => (
+        {spatial.grid.map((_item, index) => (
           <button key={index} onClick={() => onChoose(index)}
+            aria-label={t('position').replace('{number}', String(index + 1))}
             className="flex aspect-square cursor-pointer items-center justify-center rounded-2xl border-2 border-border bg-card transition-colors duration-150 hover:border-primary/50 hover:bg-primary/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-            <ObjectVisual item={item} compact={spatial.grid.length > 6} />
+            <span className="text-lg font-bold text-muted-foreground">{index + 1}</span>
           </button>
         ))}
       </div>

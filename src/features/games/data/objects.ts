@@ -31,6 +31,20 @@ export const OBJECT_POOL: GameChoice[] = [
   { id: 'hat',       emoji: '🎩',  label: 'Hat' },
   { id: 'ring',      emoji: '💍',  label: 'Ring' },
   { id: 'shoe',      emoji: '👟',  label: 'Shoe' },
+  { id: 'scissors',    emoji: '✂️',   label: 'Scissors' },
+  { id: 'camera',      emoji: '📷',  label: 'Camera' },
+  { id: 'crown',       emoji: '👑',  label: 'Crown' },
+  { id: 'paintbrush',  emoji: '🎨',  label: 'Paintbrush' },
+  { id: 'fish',        emoji: '🐟',  label: 'Fish' },
+  { id: 'shield',      emoji: '🛡️',  label: 'Shield' },
+  { id: 'compass',     emoji: '🧭',  label: 'Compass' },
+  { id: 'anchor',      emoji: '⚓',   label: 'Anchor' },
+  { id: 'hammer',      emoji: '🔨',  label: 'Hammer' },
+  { id: 'bell',        emoji: '🔔',  label: 'Bell' },
+  { id: 'star',        emoji: '⭐',  label: 'Star' },
+  { id: 'feather',     emoji: '🪶',  label: 'Feather' },
+  { id: 'drum',        emoji: '🥁',  label: 'Drum' },
+  { id: 'wallet',      emoji: '👛',  label: 'Wallet' },
 ]
 
 /** Fisher–Yates shuffle (returns new array) */
