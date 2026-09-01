@@ -76,6 +76,7 @@ const ROUND_TYPES: RoundType[] = [
 
 type Phase =
   | 'intro'
+  | 'delayed-preview'
   | 'memorise'
   | 'task'
   | 'round-result'
@@ -146,6 +147,8 @@ export function MemoryJourney() {
   const [changes, setChanges] = useState(0)
   const [lastSummary, setLastSummary] = useState('')
   const [lastSubtitle, setLastSubtitle] = useState('')
+  const [lastCorrect, setLastCorrect] = useState<number | undefined>()
+  const [lastTotal, setLastTotal] = useState<number | undefined>()
 
   // Personal memory
   const [personalQuestion, setPersonalQuestion] = useState<{
@@ -229,9 +232,24 @@ export function MemoryJourney() {
     setMetrics([])
     setTotalCorrect(0)
     setTotalPossible(0)
+    setRound(0)
+    setSelected(new Set())
+    setOrdered([])
+    setHints(0)
+    setShowHint(false)
+    setChanges(0)
+    setSelectedAnswer(null)
+    setPersonalQuestion(null)
+    setSpatial(null)
+    setShowHeader(true)
 
-    // Go directly to Round 1 — no separate delayed-preview step
-    prepareRound(0, delayed)
+    // Show delayed objects first so user can memorise them
+    setConfig({ targets: delayed, distractors: [], options: delayed })
+    setPhase('delayed-preview')
+    startCountdown(getViewSeconds(difficulty), () => {
+      // After preview, begin Round 1
+      prepareRound(0, delayed)
+    })
   }
 
   // ── Prepare Round ──
@@ -309,24 +327,19 @@ export function MemoryJourney() {
         }
 
         case 'delayed': {
-          // Show the delayed objects for memorization first
-          setConfig({ targets: delayed, distractors: [], options: delayed })
-          setPhase('memorise')
-          startCountdown(getViewSeconds(difficulty), () => {
-            // After memorize timer, build recognition options with distractors
-            const distractorPool = shuffle(
-              OBJECT_POOL.filter(
-                (item) => !delayed.some((d) => d.id === item.id) && !usedIdsRef.current.has(item.id),
-              ),
-            ).slice(0, difficulty + 1)
-            const recognitionOptions = shuffle([
-              ...delayed,
-              ...distractorPool,
-            ])
-            setConfig({ targets: delayed, distractors: distractorPool, options: recognitionOptions })
-            setPhase('task')
-            taskStartedAt.current = performance.now()
-          })
+          // Delayed recall — no memorise phase. The user already saw these
+          // objects at session start. Go straight to recognition task.
+          const distractorPool = shuffle(
+            OBJECT_POOL.filter(
+              (item) => !delayed.some((d) => d.id === item.id) && !usedIdsRef.current.has(item.id),
+            ),
+          ).slice(0, difficulty + 1)
+          const recognitionOptions = shuffle([
+            ...delayed,
+            ...distractorPool,
+          ])
+          setConfig({ targets: delayed, distractors: distractorPool, options: recognitionOptions })
+          beginTask()
           break
         }
       }  }, [beginTask, difficulty, startCountdown],
@@ -376,6 +389,8 @@ export function MemoryJourney() {
     setTotalPossible((v) => v + possible)
     setLastSummary(summary)
     setLastSubtitle(subtitle)
+    setLastCorrect(correct)
+    setLastTotal(possible)
     setPhase('round-result')
   }
 
@@ -648,7 +663,7 @@ export function MemoryJourney() {
         : 'Every effort counts. You are doing great.'
 
   const goBack = () =>
-    phase === 'intro'
+    phase === 'intro' || phase === 'delayed-preview'
       ? navigate(mode === 'daily' ? '/patient' : '/patient/games')
       : undefined
 
@@ -680,6 +695,24 @@ export function MemoryJourney() {
           onBack={goBack}
           onStart={startSession}
         />
+      )}
+
+      {/* ── DELAYED PREVIEW ── */}
+      {phase === 'delayed-preview' && config && (
+        <div className="flex flex-col items-center justify-center pt-4 pb-8">
+          <ViewTimer
+            seconds={viewTimeLeft}
+            title={t('remember_later')}
+            subtitle={t('see_again_later')}
+          />
+          <div className="mx-auto mt-8 grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
+            {config.targets.map((item) => (
+              <div key={item.id} className="flex min-h-32 flex-col items-center justify-center rounded-2xl border border-border bg-card p-4 text-primary">
+                <ObjectVisual item={item} />
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ── MEMORISE PHASE ── */}
@@ -780,6 +813,8 @@ export function MemoryJourney() {
         <RoundResult
           message={lastSummary}
           subtitle={lastSubtitle || undefined}
+          correct={lastCorrect}
+          total={lastTotal}
           isLast={round + 1 >= TOTAL_ROUNDS}
           onNext={nextRound}
         />
@@ -829,7 +864,7 @@ function ObjectRecallTask({
       <h1 className="mt-4 text-center text-2xl font-bold text-foreground">{title}</h1>
       {showHint && (
         <p className="mx-auto mt-4 rounded-2xl bg-primary/10 px-5 py-3 text-base font-medium text-primary">
-          {t('memory_hint')}
+          {t('memory_hint')} {t('hint_count').replace('{count}', String(config.targets.length))}
         </p>
       )}
       <div className="mx-auto mt-6 grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
@@ -871,7 +906,7 @@ function SpatialTask({
         {t('where_was').replace('{object}', currentQ.label.toLowerCase())}
       </h1>
       <p className="mt-2 text-base text-muted-foreground">
-        Question {spatial.currentQuestionIndex + 1} of {spatial.questions.length}
+        {t('spatial_question_count').replace('{current}', String(spatial.currentQuestionIndex + 1)).replace('{total}', String(spatial.questions.length))}
       </p>
       {attempts > 0 && (
         <p role="status" className="mt-4 rounded-2xl bg-secondary px-5 py-3 text-base text-foreground">

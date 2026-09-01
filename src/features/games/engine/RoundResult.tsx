@@ -9,6 +9,8 @@ import { useLanguage } from '@/lib/i18n/language-context'
 interface RoundResultProps {
   message: string
   subtitle?: string
+  correct?: number
+  total?: number
   isLast: boolean
   onNext: () => void
 }
@@ -16,6 +18,8 @@ interface RoundResultProps {
 export function RoundResult({
   message,
   subtitle,
+  correct,
+  total,
   isLast,
   onNext,
 }: RoundResultProps) {
@@ -30,6 +34,17 @@ export function RoundResult({
       <h1 className="mt-5 text-2xl font-bold text-foreground">
         {t('good_effort')}
       </h1>
+
+      {correct != null && total != null && (
+        <dl className="mt-4 flex items-center gap-3">
+          <dd className="text-4xl font-bold tabular-nums text-primary">
+            {correct}
+          </dd>
+          <dt className="text-lg font-medium text-muted-foreground">
+            / {total}
+          </dt>
+        </dl>
+      )}
 
       <p className="mt-2 max-w-md text-base text-muted-foreground">
         {message}
